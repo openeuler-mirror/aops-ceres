@@ -14,17 +14,17 @@ from flask import Response, jsonify
 from ceres.conf.constant import (
     INFORMATION_ABOUT_RPM_SERVICE,
     INSTALLABLE_PLUGIN,
-    DATA_MODEL,
     PLUGIN_WITH_CLASS
 )
-from ceres.conf.status import StatusCode, PARAM_ERROR, SERVER_ERROR, SUCCESS
-from ceres.log.log import LOGGER
-from ceres.manages.command_manage import Command
+from ceres.function.status import StatusCode, PARAM_ERROR, SERVER_ERROR, SUCCESS
+from ceres.function.log import LOGGER
 from ceres.manages import plugin_manage
-from ceres.tools.util import validate_data, plugin_status_judge
+from ceres.function.util import validate_data, plugin_status_judge
+from ceres.function.schema import CHANGE_COLLECT_ITEMS_SCHEMA
+from ceres.manages.token_manage import TokenManage
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def start_plugin(plugin_name: str) -> Response:
     """
     make plugin run
@@ -46,7 +46,7 @@ def start_plugin(plugin_name: str) -> Response:
     return jsonify(StatusCode.make_response_body(SERVER_ERROR))
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def stop_plugin(plugin_name: str) -> Response:
     """
     make plugin stop
@@ -68,7 +68,7 @@ def stop_plugin(plugin_name: str) -> Response:
     return jsonify(StatusCode.make_response_body(SERVER_ERROR))
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def change_collect_items(collect_items_status) -> Response:
     """
     change collect items about plugin
@@ -79,8 +79,7 @@ def change_collect_items(collect_items_status) -> Response:
     Returns:
         Response which contains update result or error info
     """
-    if validate_data(collect_items_status,
-                     DATA_MODEL.get("change_collect_items_request")) is False:
+    if validate_data(collect_items_status, CHANGE_COLLECT_ITEMS_SCHEMA) is False:
         return jsonify(StatusCode.make_response_body(PARAM_ERROR))
     res = {'resp': {}}
     plugin_name_list = list(collect_items_status.keys())

@@ -20,18 +20,19 @@ from ceres.conf.constant import (
     INSTALLABLE_PLUGIN,
     INFORMATION_ABOUT_RPM_SERVICE,
     SCANNED_APPLICATION,
-    DATA_MODEL,
     PLUGIN_WITH_CLASS,
     HOST_COLLECT_INFO_SUPPORT
 )
-from ceres.conf.status import StatusCode, PARAM_ERROR, SUCCESS
+from ceres.function.status import StatusCode, PARAM_ERROR, SUCCESS
 from ceres.manages import plugin_manage
-from ceres.manages.command_manage import Command
+from ceres.manages.collect_manage import Collect
+from ceres.manages.token_manage import TokenManage
 from ceres.manages.resource_manage import Resourse
-from ceres.tools.util import plugin_status_judge, validate_data, get_file_info
+from ceres.function.util import plugin_status_judge, validate_data
+from ceres.function.schema import STRING_ARRAY
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def get_host_info(info_type: List[str]) -> Response:
     """
     get basic info about machine
@@ -84,14 +85,14 @@ def get_host_info(info_type: List[str]) -> Response:
 
     if len(info_type) == 0:
         return jsonify(StatusCode.make_response_body(
-            (SUCCESS, Command().get_host_info(HOST_COLLECT_INFO_SUPPORT))))
+            (SUCCESS, Collect().get_host_info(HOST_COLLECT_INFO_SUPPORT))))
     count = len(set(info_type).union(set(HOST_COLLECT_INFO_SUPPORT)))
     if count > len(HOST_COLLECT_INFO_SUPPORT):
         return jsonify(StatusCode.make_response_body(PARAM_ERROR))
-    return jsonify(StatusCode.make_response_body((SUCCESS, Command().get_host_info(info_type))))
+    return jsonify(StatusCode.make_response_body((SUCCESS, Collect().get_host_info(info_type))))
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def agent_plugin_info() -> Response:
     """
     get all info about agent
@@ -174,7 +175,7 @@ def agent_plugin_info() -> Response:
     return jsonify(StatusCode.make_response_body((SUCCESS, {'resp': res})))
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def get_application_info() -> Response:
     """
         get the running applications in the target list
@@ -198,7 +199,7 @@ def get_application_info() -> Response:
     return jsonify(StatusCode.make_response_body((SUCCESS, res)))
 
 
-@Command.validate_token
+@TokenManage.validate_token
 def collect_file(config_path_list: List[str]) -> Response:
     """
         Get configuration file content
@@ -223,7 +224,7 @@ def collect_file(config_path_list: List[str]) -> Response:
                 }
 
     """
-    if not validate_data(config_path_list, DATA_MODEL.get('str_array')):
+    if not validate_data(config_path_list, STRING_ARRAY):
         return jsonify(StatusCode.make_response_body(PARAM_ERROR))
 
     result = {
@@ -238,7 +239,7 @@ def collect_file(config_path_list: List[str]) -> Response:
             result['fail_files'].append(file_path)
             continue
 
-        info = get_file_info(file_path)
+        info = Collect.get_file_info(file_path)
         if not info:
             result['fail_files'].append(file_path)
             continue

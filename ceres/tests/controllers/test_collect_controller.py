@@ -16,26 +16,29 @@ import json
 from unittest import mock
 import os
 
-from ceres.conf.status import TOKEN_ERROR, SUCCESS, PARAM_ERROR
+from ceres.conf.constant import HOST_COLLECT_INFO_SUPPORT
+from ceres.function.status import TOKEN_ERROR, PARAM_ERROR
+from ceres.manages.collect_manage import Collect
 from ceres.manages.token_manage import TokenManage
 from ceres.tests import BaseTestCase
 
 
-class TestAgentController(BaseTestCase):
+class TestCeresController(BaseTestCase):
     headers = {'Content-Type': 'application/json'}
     headers_with_token = {'Content-Type': 'application/json', 'access_token': 'hdahdahiudahud'}
     headers_with_incorrect_token = {'Content-Type': 'application/json',
                                     'access_token': '213965d8302b5246a13352680d7c8e602'}
 
     @mock.patch.object(TokenManage, 'get_value')
-    def test_get_host_info_should_return_os_info_when_request_by_correct_token(self, mock_token):
+    def test_get_host_info_should_return_os_info_when_input_all_is_correct(self, mock_token):
         """
             correct request method with correct token
         """
         mock_token.return_value = 'hdahdahiudahud'
-        url = "v1/agent/basic/info"
-        response = self.client.get(url, headers=self.headers_with_token)
-        self.assertIn('resp', response.json.keys(), response.text)
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_token, data=json.dumps([]))
+        expect_info_type = HOST_COLLECT_INFO_SUPPORT
+        self.assertEqual(expect_info_type, list(response.json.get('resp').keys()))
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_get_host_info_should_return_400_when_with_no_token(self, mock_token):
@@ -43,8 +46,8 @@ class TestAgentController(BaseTestCase):
             correct request method with no token
         """
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/basic/info"
-        response = self.client.get(url)
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers, data=json.dumps([]))
         self.assert400(response, response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
@@ -53,22 +56,43 @@ class TestAgentController(BaseTestCase):
             correct request method with incorrect token
         """
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/basic/info"
-        response = self.client.get(url, headers=self.headers_with_incorrect_token)
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_incorrect_token,
+                                    data=json.dumps([]))
         self.assertEqual(TOKEN_ERROR, response.json.get('code'), response.text)
+
+    @mock.patch.object(TokenManage, 'get_value')
+    def test_get_host_info_should_return_param_error_when_input_info_type_is_not_support(self, mock_token):
+        """
+            correct request method with incorrect token
+        """
+        mock_token.return_value = 'hdahdahiudahud'
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_token, data=json.dumps(['system']))
+        self.assertEqual(PARAM_ERROR, response.json.get('code'), response.text)
+
+    @mock.patch.object(TokenManage, 'get_value')
+    def test_get_host_info_should_return_param_error_when_no_input(self, mock_token):
+        """
+            correct request method with incorrect token
+        """
+        mock_token.return_value = 'hdahdahiudahud'
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_token)
+        self.assert400(response)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_get_host_info_should_return_405_when_request_by_other_method(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/basic/info"
-        response = self.client.post(url, headers=self.headers_with_token)
+        url = "v1/ceres/host/info"
+        response = self.client.get(url, headers=self.headers_with_token, data=json.dumps([]))
         self.assert405(response)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_change_collect_items_should_only_return_change_success_when_input_correct(self,
                                                                                        mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
                 "redis": "on",
@@ -85,7 +109,7 @@ class TestAgentController(BaseTestCase):
            some probe is incorrect
         """
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
                 "redis": "on",
@@ -99,7 +123,7 @@ class TestAgentController(BaseTestCase):
     @mock.patch.object(TokenManage, 'get_value')
     def test_change_collect_items_should_return_not_support_when_input_unsupported_plugin(self,
                                                                                           mock_token):
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher2": {
                 "redis": "on",
@@ -121,7 +145,7 @@ class TestAgentController(BaseTestCase):
 
         """
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
                 "redis": "on",
@@ -140,7 +164,7 @@ class TestAgentController(BaseTestCase):
     @mock.patch.object(TokenManage, 'get_value')
     def test_change_collect_items_should_return_param_error_when_input_incorrect(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
                 "redis": 1,
@@ -153,7 +177,7 @@ class TestAgentController(BaseTestCase):
     @mock.patch.object(TokenManage, 'get_value')
     def test_change_collect_items_should_return_param_error_when_with_no_input(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        url = "http://localhost:12000/v1/agent/collect/items/change"
+        url = "http://localhost:12000/v1/ceres/collect/items/change"
         response = self.client.post(url, headers=self.headers_with_token)
         self.assertEqual(PARAM_ERROR, response.json.get('code'), response.text)
 
@@ -162,9 +186,9 @@ class TestAgentController(BaseTestCase):
             self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
         with mock.patch(
-                'ceres.controllers.agent_controller.plugin_status_judge') as mock_plugin_status:
+                'ceres.controllers.collect_controller.plugin_status_judge') as mock_plugin_status:
             mock_plugin_status.return_value = 'Active: active (running)'
-            response = self.client.get('/v1/agent/application/info',
+            response = self.client.get('/v1/ceres/application/info',
                                        headers=self.headers_with_token)
             self.assert200(response, response.text)
 
@@ -172,27 +196,27 @@ class TestAgentController(BaseTestCase):
     def test_get_application_info_should_return_token_error_when_with_incorrect_token(self,
                                                                                       mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.get('/v1/agent/application/info',
+        response = self.client.get('/v1/ceres/application/info',
                                    headers=self.headers_with_incorrect_token)
         self.assertEqual(TOKEN_ERROR, response.json.get('code'), response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_get_application_info_should_return_400_when_with_no_token(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.get('/v1/agent/application/info')
+        response = self.client.get('/v1/ceres/application/info')
         self.assert400(response, response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_get_application_info_should_return_405_when_request_by_incorrect_method(self,
                                                                                      mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/application/info')
+        response = self.client.post('/v1/ceres/application/info')
         self.assert405(response, response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
     @mock.patch.object(os.path, 'exists')
     @mock.patch.object(os.path, 'isfile')
-    @mock.patch('ceres.controllers.agent_controller.get_file_info')
+    @mock.patch.object(Collect, 'get_file_info')
     def test_collect_file_should_return_file_content_when_input_correct_file_path_with_token(self,
                                                                                              mock_file_info,
                                                                                              mock_isfile,
@@ -211,13 +235,13 @@ class TestAgentController(BaseTestCase):
         mock_exists.return_value = True
         mock_token.return_value = 'hdahdahiudahud'
         data = ['test1', 'test2']
-        response = self.client.post('/v1/agent/file/collect',
+        response = self.client.post('/v1/ceres/file/collect',
                                     data=json.dumps(data),
                                     headers=self.headers_with_token)
         self.assertTrue(json.loads(response.text).get('infos')[0].get('content'), response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
-    @mock.patch('ceres.controllers.agent_controller.get_file_info')
+    @mock.patch.object(Collect, 'get_file_info')
     @mock.patch.object(os.path, 'exists')
     @mock.patch.object(os.path, 'isfile')
     def test_collect_file_should_return_fail_list_when_input_file_path_is_not_exist(self,
@@ -238,7 +262,7 @@ class TestAgentController(BaseTestCase):
                                        "content": "content"
                                        }
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/file/collect',
+        response = self.client.post('/v1/ceres/file/collect',
                                     data=json.dumps(data),
                                     headers=self.headers_with_token)
         self.assertEqual(json.loads(response.text).get('fail_files'), ['test2'], response.text)
@@ -254,7 +278,7 @@ class TestAgentController(BaseTestCase):
         mock_isfile.side_effect = [False, False]
         data = ['test1', 'test2']
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/file/collect',
+        response = self.client.post('/v1/ceres/file/collect',
                                     data=json.dumps(data),
                                     headers=self.headers_with_token)
         self.assertEqual(['test1', 'test2'], json.loads(response.text).get('fail_files'),
@@ -265,7 +289,7 @@ class TestAgentController(BaseTestCase):
             self, mock_token):
         data = ['test1']
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/file/collect',
+        response = self.client.post('/v1/ceres/file/collect',
                                     data=json.dumps(data),
                                     headers=self.headers_with_incorrect_token)
         self.assertEqual(TOKEN_ERROR, response.json.get('code'), response.text)
@@ -275,21 +299,21 @@ class TestAgentController(BaseTestCase):
                                                                                        mock_token):
         data = ['test1']
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/file/collect', data=json.dumps(data),
+        response = self.client.post('/v1/ceres/file/collect', data=json.dumps(data),
                                     headers=self.headers)
         self.assert400(response, response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_collect_file_should_return_400_when_no_input_with_token(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.post('/v1/agent/file/collect', headers=self.headers)
+        response = self.client.post('/v1/ceres/file/collect', headers=self.headers)
         self.assert400(response, response.text)
 
     @mock.patch.object(TokenManage, 'get_value')
     def test_collect_file_should_return_400_when_input_incorrect_data_with_token(self, mock_token):
         mock_token.return_value = 'hdahdahiudahud'
         data = [2333]
-        response = self.client.post('/v1/agent/file/collect', data=json.dumps(data),
+        response = self.client.post('/v1/ceres/file/collect', data=json.dumps(data),
                                     headers=self.headers)
         self.assert400(response, response.text)
 
@@ -297,6 +321,6 @@ class TestAgentController(BaseTestCase):
     def test_collect_file_should_return_405_when_requset_by_get(self, mock_token):
         data = ['test1']
         mock_token.return_value = 'hdahdahiudahud'
-        response = self.client.get('/v1/agent/file/collect', data=json.dumps(data),
+        response = self.client.get('/v1/ceres/file/collect', data=json.dumps(data),
                                    headers=self.headers)
         self.assert405(response, response.text)

@@ -12,9 +12,14 @@
 # ******************************************************************************/
 import threading
 import json
-from typing import NoReturn
+from typing import NoReturn, Any
+
+import connexion
+from flask import jsonify
 
 from ceres.conf.constant import DEFAULT_TOKEN_PATH
+from ceres.function.log import LOGGER
+from ceres.function.status import StatusCode, TOKEN_ERROR
 
 
 class TokenManage:
@@ -66,3 +71,23 @@ class TokenManage:
             cls.load_token()
         cls._mutex.release()
         return cls.token
+
+    @classmethod
+    def validate_token(cls, func) -> Any:
+        """
+        validate if the token is correct
+
+        Returns:
+            return func when token is correct,
+            return error info when token is incorrect.
+        """
+
+        def wrapper(*arg, **kwargs):
+            token = cls.get_value()
+            access_token = connexion.request.headers.get('access_token')
+            if token == '' or access_token != token:
+                LOGGER.warning("token is incorrect when request %s" % connexion.request.path)
+                return jsonify(StatusCode.make_response_body(TOKEN_ERROR))
+            return func(*arg, **kwargs)
+
+        return wrapper
