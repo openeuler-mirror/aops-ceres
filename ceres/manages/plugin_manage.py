@@ -18,10 +18,10 @@ import libconf
 
 from ceres.conf import configuration
 from ceres.conf.constant import INSTALLABLE_PLUGIN
-from ceres.conf.status import SUCCESS, FILE_NOT_FOUND
-from ceres.log.log import LOGGER
+from ceres.function.status import SUCCESS, FILE_NOT_FOUND
+from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
-from ceres.tools.util import (
+from ceres.function.util import (
     get_shell_data,
     load_gopher_config,
     plugin_status_judge,

@@ -14,7 +14,7 @@ import subprocess
 import unittest
 from unittest import mock
 
-from ceres.conf.status import SUCCESS, FILE_NOT_FOUND
+from ceres.function.status import SUCCESS, FILE_NOT_FOUND
 from ceres.manages.plugin_manage import Plugin
 from ceres.models.custom_exception import InputError
 

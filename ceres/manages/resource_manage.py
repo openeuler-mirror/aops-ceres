@@ -15,9 +15,9 @@ import os
 from dataclasses import dataclass
 
 from ceres.conf.constant import BASE_SERVICE_PATH
-from ceres.log.log import LOGGER
+from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
-from ceres.tools.util import load_conf, get_shell_data
+from ceres.function.util import load_conf, get_shell_data
 
 
 @dataclass

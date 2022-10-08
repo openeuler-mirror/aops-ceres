@@ -13,7 +13,7 @@ paths:
   /host/info:
     post:
       tags:
-      - "agent"
+      - "ceres"
       description: "获取主机信息"
       operationId: "get_host_info"
       parameters:
@@ -36,7 +36,7 @@ paths:
           description: "主机的基本信息"
           schema:
             $ref: "#/definitions/get_host_info_rsp"
-      x-swagger-router-controller: "ceres.controllers.agent_controller"
+      x-swagger-router-controller: "ceres.controllers.collect_controller"
   /plugin/start:
     post:
       tags:
@@ -98,7 +98,7 @@ paths:
       tags:
         - plugin
       description: |-
-        改变agent中各插件的采集项状态
+        改变ceres中各插件的采集项状态
       operationId: change_collect_items
       parameters:
         - name: collect_items_status
@@ -121,8 +121,8 @@ paths:
   /plugin/info:
     get:
       tags:
-        - agent
-      description: 获取agent插件运行信息
+        - ceres
+      description: 获取ceres插件运行信息
       operationId: agent_plugin_info
       parameters:
         - name: access_token
@@ -139,11 +139,11 @@ paths:
           description: 错误响应
           schema:
             $ref: '#/definitions/ErrorRsp'
-      x-swagger-router-controller: "ceres.controllers.agent_controller"
+      x-swagger-router-controller: "ceres.controllers.collect_controller"
   /application/info:
     get:
       tags:
-        - agent
+        - ceres
       operationId: get_application_info
       parameters:
         - name: access_token
@@ -153,14 +153,14 @@ paths:
           required: true
       responses:
         '200':
-          description: 获取agent当前运行的应用
+          description: 获取ceres当前运行的应用
           schema:
             $ref: '#/definitions/resp_application_info'
-      x-swagger-router-controller: "ceres.controllers.agent_controller"
+      x-swagger-router-controller: "ceres.controllers.collect_controller"
   /file/collect:
     post:
       tags:
-        - agent
+        - ceres
       description: 获取系统特定配置文件信息。将文件压缩后传回
       operationId: collect_file
       parameters:
@@ -185,7 +185,7 @@ paths:
           description: 返回请求文件内容主体
           schema:
             $ref: '#/definitions/resp_collect_file'
-      x-swagger-router-controller: "ceres.controllers.agent_controller"
+      x-swagger-router-controller: "ceres.controllers.collect_controller"
 definitions:
   ErrorRsp:
     required:
@@ -291,7 +291,7 @@ definitions:
               items:
                 type: string
   resp_plugin_info:
-    description: 获取agent插件信息响应
+    description: 获取ceres插件信息响应
     properties:
       code:
         type: integer

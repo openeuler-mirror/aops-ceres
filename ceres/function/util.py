@@ -12,20 +12,23 @@
 # ******************************************************************************/
 import configparser
 import copy
-import grp
 import json
 import os
-import pwd
 from socket import socket, AF_INET, SOCK_DGRAM
 from typing import Union, List, Any, Tuple, Dict, NoReturn
 from subprocess import Popen, PIPE, STDOUT
 
+import requests
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
 
-from ceres.conf.constant import DATA_MODEL, INFORMATION_ABOUT_RPM_SERVICE
-from ceres.log.log import LOGGER
+from ceres.manages.token_manage import TokenManage
+from ceres.conf import configuration
+from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE, DEFAULT_TOKEN_PATH
+from ceres.function.log import LOGGER
+from ceres.function.status import HTTP_CONNECT_ERROR, SUCCESS, PARAM_ERROR
 from ceres.models.custom_exception import InputError
+from ceres.function.schema import STRING_ARRAY, REGISTER_SCHEMA
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:
@@ -83,8 +86,7 @@ def get_shell_data(command_list: List[str], key: bool = True, env=None,
     Raises:
         FileNotFoundError: linux has no this command
     """
-    schema = DATA_MODEL.get('str_array')
-    if validate_data(command_list, schema) is False:
+    if validate_data(command_list, STRING_ARRAY) is False:
         raise InputError('please check your command')
     try:
         res = Popen(command_list, stdout=PIPE, stdin=stdin, stderr=STDOUT, env=env)
@@ -325,45 +327,53 @@ def update_ini_data_value(file_path: str, section: str, option: str, value) -> N
         cf.write(f)
 
 
-def get_file_info(file_path: str) -> dict:
+def register(register_info: dict) -> int:
     """
-        get file content and attribute
+    register on manager
     Args:
-        file_path(str): file absolute path
-
+        register_info(dict): It contains the necessary information to register an account
+        for example:
+        {
+          "web_username": "string",
+          "web_password": "string",
+          "manager_ip": "string",
+          "manager_port": "string",
+          "host_name": "string",
+          "host_group_name": "string",
+          "management": true,
+          "client_port": "12000"
+        }
     Returns:
-        dict: { path: file_path,
-                file_attr: {
-                mode:  0755(-rwxr-xr-x),
-                owner: owner,
-                group: group},
-                content: content}
+        str: status code
     """
-    if os.access(file_path, os.X_OK):
-        LOGGER.warning(f"{file_path} is an executable file")
-        return {}
+    if not validate_data(register_info, REGISTER_SCHEMA):
+        return PARAM_ERROR
 
-    if os.path.getsize(file_path) > 1024 * 1024 * 1:
-        LOGGER.warning(f"{file_path} is too large")
-        return {}
+    data = {}
+    data['host_name'] = register_info.get('host_name')
+    data['host_group_name'] = register_info.get('host_group_name')
+    data['management'] = register_info.get('management') or False
+    data['username'] = register_info.get('web_username')
+    data['password'] = register_info.get('web_password')
+    data['host_id'] = get_uuid()
+    data['public_ip'] = get_host_ip()
+    data['client_port'] = register_info.get('client_port') or \
+                         configuration.ceres.get('PORT')
 
+    manager_ip = register_info.get('manager_ip')
+    manager_port = register_info.get('manager_port')
+    url = f'http://{manager_ip}:{manager_port}/manage/host/add'
     try:
-        with open(file_path, 'r', encoding='utf8') as f:
-            content = f.read()
-    except UnicodeDecodeError:
-        LOGGER.error(f'{file_path} may not be a text file')
-        return {}
-    file_attr = os.stat(file_path)
-    file_mode = oct(file_attr.st_mode)[4:]
-    file_owner = pwd.getpwuid(file_attr.st_uid)[0]
-    file_group = grp.getgrgid(file_attr.st_gid)[0]
-    info = {
-        'path': file_path,
-        'file_attr': {
-            'mode': file_mode,
-            'owner': file_owner,
-            'group': file_group
-        },
-        'content': content
-    }
-    return info
+        ret = requests.post(url, data=json.dumps(data),
+                            headers={'content-type': 'application/json'}, timeout=5)
+    except requests.exceptions.ConnectionError as e:
+        LOGGER.error(e)
+        return HTTP_CONNECT_ERROR
+    ret_data = json.loads(ret.text)
+    if ret_data.get('code') == SUCCESS:
+        TokenManage.set_value(ret_data.get('token'))
+        save_data_to_file(json.dumps({"access_token": ret_data.get('token')}),
+                          DEFAULT_TOKEN_PATH)
+        return SUCCESS
+    LOGGER.error(ret_data)
+    return int(ret_data.get('code'))

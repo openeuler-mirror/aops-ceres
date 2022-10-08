@@ -21,6 +21,7 @@ HTTP_CONNECT_ERROR = 1001
 UNKNOWN_ERROR = 1002
 TOKEN_ERROR = 1201
 
+
 class StatusCode:
     """
     status code with related message

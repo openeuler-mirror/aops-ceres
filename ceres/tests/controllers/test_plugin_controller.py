@@ -12,7 +12,7 @@
 # ******************************************************************************/
 from unittest import mock
 
-from ceres.conf.status import StatusCode, SUCCESS, FILE_NOT_FOUND, TOKEN_ERROR
+from ceres.function.status import StatusCode, SUCCESS, FILE_NOT_FOUND, TOKEN_ERROR
 from ceres.tests import BaseTestCase
 from ceres.manages.token_manage import TokenManage
 from ceres.manages.plugin_manage import Plugin

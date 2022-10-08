@@ -17,40 +17,15 @@ BASE_SERVICE_PATH = '/usr/lib/systemd/system'
 
 AGENT_CONFIG_PATH = os.path.join(BASE_CONFIG_PATH, 'ceres.conf')
 DEFAULT_TOKEN_PATH = os.path.join(BASE_CONFIG_PATH, 'ceres_token.json')
-DATA_MODEL = {
-    "str_array": {"type": "array", "items": {"type": "string", "minLength": 1}},
-    "change_collect_items_request": {"type": "object",
-                                     "additionalProperties":
-                                         {"type": "object",
-                                          "additionalProperties":
-                                              {"enum": ["on", "off", "auto"]}}},
-    'register_schema': {
-        "type": "object",
-        "required": ["host_name",
-                     "host_group_name",
-                     "web_username",
-                     "web_password",
-                     "management",
-                     "manager_ip",
-                     "manager_port"],
-        "properties": {
-            "host_name":        {"type": "string", "minLength": 1},
-            "host_group_name":  {"type": "string", "minLength": 1},
-            "web_username":     {"type": "string", "minLength": 1},
-            "web_password":     {"type": "string", "minLength": 1},
-            "management":       {"enum": [True, False]},
-            "manager_ip":       {"type": "string", "minLength": 8},
-            "manager_port":     {"type": "string", "minLength": 2},
-            "ceres_port": {"type": "string", "minLength": 1}
-        }}}
+
 INSTALLABLE_PLUGIN = ['gala-gopher']
 INFORMATION_ABOUT_RPM_SERVICE = {
-    "gala-gopher":  {"rpm_name": "gala-gopher", "service_name": "gala-gopher"},
-    "mysql":        {"rpm_name": "mysql5",      "service_name": "mysqld"},
-    "kubernetes":   {"rpm_name": "kubernetes",  "service_name": "kubernetes"},
-    "hadoop":       {"rpm_name": "hadoop",      "service_name": "hadoop"},
-    "nginx":        {"rpm_name": "nginx",       "service_name": "nginx"},
-    "docker":       {"rpm_name": "docker",      "service_name": "docker"},
+    "gala-gopher": {"rpm_name": "gala-gopher", "service_name": "gala-gopher"},
+    "mysql": {"rpm_name": "mysql5", "service_name": "mysqld"},
+    "kubernetes": {"rpm_name": "kubernetes", "service_name": "kubernetes"},
+    "hadoop": {"rpm_name": "hadoop", "service_name": "hadoop"},
+    "nginx": {"rpm_name": "nginx", "service_name": "nginx"},
+    "docker": {"rpm_name": "docker", "service_name": "docker"},
 }
 SCANNED_APPLICATION = ["mysql", "kubernetes", "hadoop", "nginx", "docker", "gala-gopher"]
 
@@ -75,7 +50,7 @@ REGISTER_HELP_INFO = """
     manager_port            type: string
     
     optional parameter: 
-    ceres_port              type: string
+    client_port              type: string
     
     for example:
     {
@@ -86,7 +61,7 @@ REGISTER_HELP_INFO = """
     "manager_ip":"192.168.xx.xx",
     "management":false,
     "manager_port":"11111",
-    "ceres_port":"12000"
+    "client_port":"12000"
     }
 
 """

@@ -11,35 +11,21 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import re
-from typing import Any, Dict, Union, List
 import json
-
-import connexion
-import requests
-from flask import jsonify
+import os
+import grp
+import pwd
+from typing import Any, Dict, Union, List
 
 from ceres.models.custom_exception import InputError
-from ceres.conf.constant import DATA_MODEL, DEFAULT_TOKEN_PATH
-from ceres.conf import configuration
-from ceres.conf.status import (
-    PARAM_ERROR,
-    HTTP_CONNECT_ERROR,
-    SUCCESS,
-    StatusCode,
-    TOKEN_ERROR
-)
-from ceres.log.log import LOGGER
-from ceres.manages.token_manage import TokenManage as TOKEN
-from ceres.tools.util import (
-    get_shell_data,
-    validate_data,
-    get_uuid,
-    get_host_ip,
-    save_data_to_file
-)
+from ceres.function.log import LOGGER
+from ceres.function.util import get_shell_data
 
 
-class Command:
+class Collect:
+    """
+        Provides functions to collect information.
+    """
 
     def get_host_info(self, info_type: List[str]) -> dict:
         """
@@ -243,8 +229,7 @@ class Command:
         LOGGER.warning('Get Total online memory fail, please check lsmem and try it again')
         return ''
 
-    @staticmethod
-    def _get_memory_info() -> Dict[str, Union[int, List[Dict[str, Any]]]]:
+    def _get_memory_info(self) -> Dict[str, Union[int, List[Dict[str, Any]]]]:
         """
         get memory detail info and memory stick count
 
@@ -266,8 +251,8 @@ class Command:
 
         """
         res = {}
-        if Command.__get_total_online_memory():
-            res['size'] = Command.__get_total_online_memory()
+        if self.__get_total_online_memory():
+            res['size'] = self.__get_total_online_memory()
 
         try:
             memory_data = get_shell_data(['dmidecode', '-t', 'memory']).split('Memory Device')
@@ -304,77 +289,6 @@ class Command:
         res['info'] = info
 
         return res
-
-    @classmethod
-    def validate_token(cls, func) -> Any:
-        """
-        validate if the token is correct
-
-        Returns:
-            return func when token is correct,
-            return error info when token is incorrect.
-        """
-
-        def wrapper(*arg, **kwargs):
-            token = TOKEN.get_value()
-            access_token = connexion.request.headers.get('access_token')
-            if token == '' or access_token != token:
-                LOGGER.warning("token is incorrect when request %s" % connexion.request.path)
-                return jsonify(StatusCode.make_response_body(TOKEN_ERROR))
-            return func(*arg, **kwargs)
-
-        return wrapper
-
-    @classmethod
-    def register(cls, register_info: dict) -> int:
-        """
-        register on manager
-        Args:
-            register_info(dict): It contains the necessary information to register an account
-            for example:
-            {
-              "web_username": "string",
-              "web_password": "string",
-              "manager_ip": "string",
-              "manager_port": "string",
-              "host_name": "string",
-              "host_group_name": "string",
-              "management": true
-            }
-        Returns:
-            str: status code
-        """
-        if not validate_data(register_info, DATA_MODEL.get('register_schema')):
-            return PARAM_ERROR
-
-        data = {}
-        data['host_name'] = register_info.get('host_name')
-        data['host_group_name'] = register_info.get('host_group_name')
-        data['management'] = register_info.get('management') or False
-        data['username'] = register_info.get('web_username')
-        data['password'] = register_info.get('web_password')
-        data['host_id'] = get_uuid()
-        data['public_ip'] = get_host_ip()
-        data['ceres_port'] = register_info.get('ceres_port') or \
-                             configuration.ceres.get('PORT')
-
-        manager_ip = register_info.get('manager_ip')
-        manager_port = register_info.get('manager_port')
-        url = f'http://{manager_ip}:{manager_port}/manage/host/add'
-        try:
-            ret = requests.post(url, data=json.dumps(data),
-                                headers={'content-type': 'application/json'}, timeout=5)
-        except requests.exceptions.ConnectionError as e:
-            LOGGER.error(e)
-            return HTTP_CONNECT_ERROR
-        ret_data = json.loads(ret.text)
-        if ret_data.get('code') == SUCCESS:
-            TOKEN.set_value(ret_data.get('token'))
-            save_data_to_file(json.dumps({"access_token": ret_data.get('token')}),
-                              DEFAULT_TOKEN_PATH)
-            return SUCCESS
-        LOGGER.error(ret_data)
-        return int(ret_data.get('code'))
 
     @staticmethod
     def _get_disk_info() -> List[Dict]:
@@ -417,3 +331,47 @@ class Command:
                 res.append(tmp)
 
         return res
+
+    @staticmethod
+    def get_file_info(file_path: str) -> dict:
+        """
+            get file content and attribute
+        Args:
+            file_path(str): file absolute path
+
+        Returns:
+            dict: { path: file_path,
+                    file_attr: {
+                    mode:  0755(-rwxr-xr-x),
+                    owner: owner,
+                    group: group},
+                    content: content}
+        """
+        if os.access(file_path, os.X_OK):
+            LOGGER.warning(f"{file_path} is an executable file")
+            return {}
+
+        if os.path.getsize(file_path) > 1024 * 1024 * 1:
+            LOGGER.warning(f"{file_path} is too large")
+            return {}
+
+        try:
+            with open(file_path, 'r', encoding='utf8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            LOGGER.error(f'{file_path} may not be a text file')
+            return {}
+        file_attr = os.stat(file_path)
+        file_mode = oct(file_attr.st_mode)[4:]
+        file_owner = pwd.getpwuid(file_attr.st_uid)[0]
+        file_group = grp.getgrgid(file_attr.st_gid)[0]
+        info = {
+            'path': file_path,
+            'file_attr': {
+                'mode': file_mode,
+                'owner': file_owner,
+                'group': file_group
+            },
+            'content': content
+        }
+        return info
