@@ -11,11 +11,10 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import configparser
-import copy
 import json
 import os
 from socket import socket, AF_INET, SOCK_DGRAM
-from typing import Union, List, Any, Tuple, Dict, NoReturn
+from typing import Union, List, Any, Dict, NoReturn
 from subprocess import Popen, PIPE, STDOUT
 
 import requests
@@ -145,62 +144,6 @@ def plugin_status_judge(plugin_name: str) -> str:
         LOGGER.error(f'Get service {service_name} status error!')
         return ""
     return res
-
-
-def change_probe_status(probes: Tuple[AttrDict],
-                        gopher_probes_status: dict, res: dict) -> Tuple[dict, dict]:
-    """
-    to change gopher probe status
-
-    Args:
-        res(dict): which contains status change success list
-        probes(Tuple[AttrDict]): gopher probes info
-        gopher_probes_status(dict): probe status which need to change
-
-    Returns:
-        Tuple which contains change successful plugin and change fail plugin
-    """
-    failure_list = copy.deepcopy(gopher_probes_status)
-    for probe in probes:
-        if judge_probe_can_change(probe, gopher_probes_status):
-            probe['switch'] = gopher_probes_status[probe['name']]
-            res['success'].append(probe['name'])
-            failure_list.pop(probe['name'])
-    return res, failure_list
-
-
-def judge_probe_can_change(probe: AttrDict, probe_status: Dict[str, str]) -> bool:
-    """
-        Determine which probe can be changed.
-        It must meet the following conditions
-        1. probe name in gopher config file, the status is on or off.
-        2. probe name in gopher config file, the status is auto and it has an option named 'start_check'.
-
-    Args:
-        probe(AttrDict):
-            e.g AttrDict([('name', 'test'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('start_check', ''),
-                           ('check_type', 'count'),
-                           ('switch', 'on')])
-        probe_status(Dict[str, str]): modification results we expect
-            e.g {
-                    'probe_name1':on,
-                    'probe_name2':off,
-                    'probe_name3':auto,
-                    ...
-                }
-
-    Returns:
-        bool
-    """
-    if probe.get('name', "") in probe_status and probe_status[probe['name']] != 'auto':
-        return True
-    elif probe.get('name', "") in probe_status and probe_status[
-        probe['name']] == 'auto' and 'start_check' in probe:
-        return True
-    return False
 
 
 def get_uuid() -> str:

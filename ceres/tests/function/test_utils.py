@@ -13,43 +13,9 @@
 import unittest
 
 import responses
-from libconf import AttrDict
-from ceres.function.util import change_probe_status, register
-from ceres.function.status import SUCCESS, PARAM_ERROR
 
-target_probes = (AttrDict([('name', 'test_no_check_1'),
-                           ('command', 'test'),
-                           ('param', ''),
-                           ('switch', 'on')]),
-                 AttrDict([('name', 'test_no_check_2'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('switch', 'off')]),
-                 AttrDict([('name', 'test_with_check_1'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('start_check', ''),
-                           ('check_type', 'count'),
-                           ('switch', 'on')]),
-                 AttrDict([('name', 'test_with_check_2'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('start_check', ''),
-                           ('check_type', 'count'),
-                           ('switch', 'off')]),
-                 AttrDict([('name', 'test_with_check_3'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('start_check', ''),
-                           ('check_type', 'count'),
-                           ('switch', 'auto')]),
-                 AttrDict([('name', 'test_with_check_4'),
-                           ('command', ''),
-                           ('param', ''),
-                           ('start_check', ''),
-                           ('check_type', 'count'),
-                           ('switch', 'auto')]),
-                 )
+from ceres.function.util import register
+from ceres.function.status import SUCCESS, PARAM_ERROR
 
 
 class TestUtils(unittest.TestCase):
@@ -282,41 +248,3 @@ class TestUtils(unittest.TestCase):
         }
         data = register(input_data)
         self.assertEqual(SUCCESS, data)
-
-    def test_change_probe_status_should_return_success_list_and_empty_failure_list_when_input_all_right(self):
-        probe_status = {
-            'test_no_check_1': 'off',
-            "test_no_check_2": "on",
-            "test_with_check_1": "auto",
-            "test_with_check_2": "auto",
-            "test_with_check_3": "on",
-            "test_with_check_4": "off"
-        }
-        res, fail_list = change_probe_status(target_probes, probe_status, {'success': []})
-        expect_success_res = list(probe_status.keys())
-        self.assertEqual((expect_success_res, {}), (res['success'], fail_list))
-
-    def test_change_probe_status_should_return_success_list_and_failure_list_when_part_of_input_probe_name_is_not_in_target_probes(
-            self):
-        probe_status = {
-            'test_no_check_1': 'off',
-            "test_no_check_3": "on",
-            "test_with_check_1": "auto",
-            "test_with_check_2": "auto",
-            "test_with_check_3": "on",
-            "test_with_check_5": "off"
-        }
-        res, fail_list = change_probe_status(target_probes, probe_status, {'success': []})
-        expect_success_res = ['test_no_check_1', 'test_with_check_1', 'test_with_check_2', 'test_with_check_3']
-        expect_fail_res = {"test_no_check_3": "on", "test_with_check_5": "off"}
-        self.assertEqual((expect_success_res, expect_fail_res), (res['success'], fail_list))
-
-    def test_change_probe_status_should_return_failure_list_when_input_probe_name_is_not_support_auto(
-            self):
-        probe_status = {
-            'test_no_check_1': 'auto',
-            "test_no_check_2": "auto"
-        }
-        res, fail_list = change_probe_status(target_probes, probe_status, {'success': []})
-        expect_fail_res = {"test_no_check_1": "auto", "test_no_check_2": "auto"}
-        self.assertEqual(expect_fail_res, fail_list)

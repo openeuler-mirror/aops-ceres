@@ -19,7 +19,7 @@ import os
 import configparser
 
 from ceres.conf import default_config
-from ceres.conf.constant import AGENT_CONFIG_PATH
+from ceres.conf.constant import CERES_CONFIG_PATH
 
 
 class Config:
@@ -81,4 +81,4 @@ class Config:
                     setattr(self, section, temp_config)
 
 
-configuration = Config(AGENT_CONFIG_PATH, default_config)
+configuration = Config(CERES_CONFIG_PATH, default_config)

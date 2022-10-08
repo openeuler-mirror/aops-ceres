@@ -16,7 +16,7 @@ from ceres.conf.constant import (
     INSTALLABLE_PLUGIN,
     PLUGIN_WITH_CLASS
 )
-from ceres.function.status import StatusCode, PARAM_ERROR, SERVER_ERROR, SUCCESS
+from ceres.function.status import StatusCode, PARAM_ERROR, SERVER_ERROR, SUCCESS, FILE_NOT_FOUND
 from ceres.function.log import LOGGER
 from ceres.manages import plugin_manage
 from ceres.function.util import validate_data, plugin_status_judge
@@ -87,12 +87,12 @@ def change_collect_items(collect_items_status) -> Response:
     for plugin_name in plugin_name_list:
 
         if plugin_name not in INSTALLABLE_PLUGIN:
-            LOGGER.warning(f'{plugin_name} is not supported by agent')
+            LOGGER.warning(f'{plugin_name} is not supported by ceres')
             unsupported_plugin_list.append(plugin_name)
             continue
 
         if not plugin_status_judge(plugin_name):
-            LOGGER.warning(f'{plugin_name} is not installed by agent')
+            LOGGER.warning(f'{plugin_name} is not installed by ceres')
             unsupported_plugin_list.append(plugin_name)
             continue
 
@@ -100,7 +100,7 @@ def change_collect_items(collect_items_status) -> Response:
         if hasattr(plugin_manage, plugin_class_name):
             plugin = getattr(plugin_manage, plugin_class_name)
             if hasattr(plugin, 'change_items_status'):
-                res['resp'][plugin_name] = plugin.change_items_status(
+                res['resp'][plugin_name] = plugin().change_items_status(
                     collect_items_status[plugin_name])
         else:
             LOGGER.warning(f'{plugin_name} is not supported by collect items')
