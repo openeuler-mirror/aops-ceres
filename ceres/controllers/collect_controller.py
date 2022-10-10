@@ -27,7 +27,7 @@ from ceres.function.status import StatusCode, PARAM_ERROR, SUCCESS
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
 from ceres.manages.token_manage import TokenManage
-from ceres.manages.resource_manage import Resourse
+from ceres.manages.resource_manage import Resource
 from ceres.function.util import plugin_status_judge, validate_data
 from ceres.function.schema import STRING_ARRAY
 
@@ -93,9 +93,9 @@ def get_host_info(info_type: List[str]) -> Response:
 
 
 @TokenManage.validate_token
-def agent_plugin_info() -> Response:
+def ceres_plugin_info() -> Response:
     """
-    get all info about agent
+    get all info about ceres
 
     Returns:
         Response:
@@ -142,13 +142,13 @@ def agent_plugin_info() -> Response:
         status = plugin.get_plugin_status()
         if status == 'active':
             pid = plugin_manage.Plugin.get_pid(service_name)
-            cpu_current = Resourse.get_cpu(service_name, pid)
-            memory_current = Resourse.get_memory(pid)
+            cpu_current = Resource.get_current_cpu(service_name, pid)
+            memory_current = Resource.get_current_memory(pid)
         else:
             cpu_current = None
             memory_current = None
-        cpu_limit = Resourse.get_cpu_limit(service_name)
-        memory_limit = Resourse.get_memory_limit(service_name)
+        cpu_limit = Resource.get_cpu_limit(service_name)
+        memory_limit = Resource.get_memory_limit(service_name)
 
         collect_items_status = []
         plugin_class_name = PLUGIN_WITH_CLASS.get(plugin_name, '')

@@ -10,22 +10,22 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+import copy
 import re
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import libconf
 
 from ceres.conf import configuration
 from ceres.conf.constant import INSTALLABLE_PLUGIN
-from ceres.function.status import SUCCESS, FILE_NOT_FOUND
+from ceres.function.status import SUCCESS, SERVICE_NOT_EXIST
 from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
 from ceres.function.util import (
     get_shell_data,
     load_gopher_config,
-    plugin_status_judge,
-    change_probe_status
+    plugin_status_judge
 )
 
 
@@ -62,12 +62,12 @@ class Plugin:
             res = get_shell_data(["systemctl", "start", f"{self.rpm_name}"])
             if "service not found" in res:
                 LOGGER.debug(f'linux has no service {self.rpm_name}!')
-                return FILE_NOT_FOUND
+                return SERVICE_NOT_EXIST
             return SUCCESS
 
         except InputError:
             LOGGER.error(f'Get service {self.rpm_name} status error!')
-            return FILE_NOT_FOUND
+            return SERVICE_NOT_EXIST
 
     def stop_service(self) -> int:
         """
@@ -86,12 +86,12 @@ class Plugin:
             res = get_shell_data(["systemctl", "stop", f"{self.rpm_name}"])
             if "service not found" in res:
                 LOGGER.debug(f'linux has no service {self.rpm_name}!')
-                return FILE_NOT_FOUND
+                return SERVICE_NOT_EXIST
             return SUCCESS
 
         except InputError:
             LOGGER.error(f'Get service {self.rpm_name} status error!')
-            return FILE_NOT_FOUND
+            return SERVICE_NOT_EXIST
 
     @classmethod
     def get_installed_plugin(cls) -> List[str]:
@@ -149,12 +149,12 @@ class Plugin:
         return main_pid
 
 
+@dataclass
 class GalaGopher(Plugin):
     """
     Some methods only available to Gopher
     """
-    _rpm = 'gala-gopher'
-    _name = 'gala-gopher'
+    _rpm_name: str = 'gala-gopher'
 
     @classmethod
     def get_collect_items(cls) -> set:
@@ -175,8 +175,65 @@ class GalaGopher(Plugin):
                     probes.add(probe_name)
         return probes
 
-    @classmethod
-    def change_items_status(cls, gopher_probes_status: Dict[str, str]) \
+    @staticmethod
+    def __judge_probe_can_change(probe: libconf.AttrDict,
+                                 probe_status: Dict[str, str]) -> bool:
+        """
+            Determine which probe can be changed.
+            It must meet the following conditions
+            1. probe name in gopher config file, the status is on or off.
+            2. probe name in gopher config file, the status is auto and
+               it has an option named 'start_check'.
+
+        Args:
+            probe(AttrDict):
+                e.g AttrDict([('name', 'test'),
+                               ('command', ''),
+                               ('param', ''),
+                               ('start_check', ''),
+                               ('check_type', 'count'),
+                               ('switch', 'on')])
+            probe_status(Dict[str, str]): modification results we expect
+                e.g {
+                        'probe_name1':on,
+                        'probe_name2':off,
+                        'probe_name3':auto,
+                        ...
+                    }
+
+        Returns:
+            bool
+        """
+        if probe.get('name', "") in probe_status and probe_status[probe['name']] != 'auto':
+            return True
+        elif probe.get('name', "") in probe_status and probe_status[
+            probe['name']] == 'auto' and 'start_check' in probe:
+            return True
+        return False
+
+    def __change_probe_status(self, probes: Tuple[libconf.AttrDict],
+                              gopher_probes_status: dict,
+                              res: dict) -> Tuple[dict, dict]:
+        """
+        to change gopher probe status
+
+        Args:
+            res(dict): which contains status change success list
+            probes(Tuple[AttrDict]): gopher probes info
+            gopher_probes_status(dict): probe status which need to change
+
+        Returns:
+            Tuple which contains change successful plugin and change fail plugin
+        """
+        failure_list = copy.deepcopy(gopher_probes_status)
+        for probe in probes:
+            if self.__judge_probe_can_change(probe, gopher_probes_status):
+                probe['switch'] = gopher_probes_status[probe['name']]
+                res['success'].append(probe['name'])
+                failure_list.pop(probe['name'])
+        return res, failure_list
+
+    def change_items_status(self, gopher_probes_status: Dict[str, str]) \
             -> Dict[str, List[str]]:
         """
         Change running status about probe
@@ -205,13 +262,14 @@ class GalaGopher(Plugin):
         if len(cfg) == 0:
             res['failure'] = list(gopher_probes_status.keys())
             return res
+
         probes = cfg.get("probes", ())
         extend_probes = cfg.get('extend_probes', ())
-        res, failure = change_probe_status(probes, gopher_probes_status, res)
-        res, failure = change_probe_status(extend_probes, failure, res)
+        res, failure = self.__change_probe_status(probes, gopher_probes_status, res)
+        res, failure = self.__change_probe_status(extend_probes, failure, res)
         res['failure'] = list(failure.keys())
-        gopher_config_path = configuration.gopher.get('CONFIG_PATH')
-        with open(gopher_config_path, 'w', encoding='utf8') as cf:
+
+        with open(configuration.gopher.get('CONFIG_PATH'), 'w', encoding='utf8') as cf:
             cf.write(libconf.dumps(cfg))
         return res
 

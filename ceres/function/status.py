@@ -19,6 +19,7 @@ CONFLICT_ERROR = 409
 SERVER_ERROR = 500
 HTTP_CONNECT_ERROR = 1001
 UNKNOWN_ERROR = 1002
+SERVICE_NOT_EXIST = 1003
 TOKEN_ERROR = 1201
 
 
@@ -50,6 +51,9 @@ class StatusCode:
         },
         TOKEN_ERROR: {
             "msg": "the session is invalid"
+        },
+        SERVICE_NOT_EXIST: {
+            "msg": "the service is not found"
         }
     }
 

@@ -123,7 +123,7 @@ paths:
       tags:
         - ceres
       description: 获取ceres插件运行信息
-      operationId: agent_plugin_info
+      operationId: ceres_plugin_info
       parameters:
         - name: access_token
           in: header

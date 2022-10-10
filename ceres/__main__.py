@@ -16,7 +16,7 @@ import argparse
 
 import connexion
 from ceres.conf import configuration
-from ceres.conf.constant import REGISTER_HELP_INFO, AGENT_CONFIG_PATH
+from ceres.conf.constant import REGISTER_HELP_INFO, CERES_CONFIG_PATH
 from ceres.function.status import SUCCESS
 from ceres.function.util import (
     get_dict_from_file,
@@ -48,12 +48,12 @@ def register_on_manager(args: argparse.Namespace) -> NoReturn:
     else:
         register_info = get_dict_from_file(args.path)
     if register_info.get('ceres_host') is not None:
-        update_ini_data_value(AGENT_CONFIG_PATH,
+        update_ini_data_value(CERES_CONFIG_PATH,
                               'ceres', 'port', register_info.get('ceres_host'))
     if register(register_info) == SUCCESS:
-        print('Agent Register Success')
+        print('Register Success')
     else:
-        print('Agent Register Fail')
+        print('Register Fail')
 
 
 def main():

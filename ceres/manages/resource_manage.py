@@ -12,7 +12,6 @@
 # ******************************************************************************/
 import configparser
 import os
-from dataclasses import dataclass
 
 from ceres.conf.constant import BASE_SERVICE_PATH
 from ceres.function.log import LOGGER
@@ -20,14 +19,13 @@ from ceres.models.custom_exception import InputError
 from ceres.function.util import load_conf, get_shell_data
 
 
-@dataclass
-class Resourse:
+class Resource:
     """
     Get cpu and memory info
     """
 
     @classmethod
-    def get_memory(cls, pid: str) -> str:
+    def get_current_memory(cls, pid: str) -> str:
         """
         Get memory value which plugin has used
         Args:
@@ -72,7 +70,7 @@ class Resourse:
         return memory_high
 
     @classmethod
-    def get_cpu(cls, rpm_name: str, pid: str) -> str:
+    def get_current_cpu(cls, rpm_name: str, pid: str) -> str:
         """
         Get cpu usage by process id
 
