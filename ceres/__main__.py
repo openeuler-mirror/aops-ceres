@@ -20,10 +20,9 @@ from ceres.conf.constant import REGISTER_HELP_INFO, CERES_CONFIG_PATH
 from ceres.function.status import SUCCESS
 from ceres.function.util import (
     get_dict_from_file,
-    register_info_to_dict,
-    update_ini_data_value,
-    register
+    update_ini_data_value
 )
+from ceres.function.register import register_info_to_dict, register
 
 
 def start(*args) -> NoReturn:

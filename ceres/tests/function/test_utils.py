@@ -14,7 +14,7 @@ import unittest
 
 import responses
 
-from ceres.function.util import register
+from ceres.function.register import register
 from ceres.function.status import SUCCESS, PARAM_ERROR
 
 
