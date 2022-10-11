@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 NAME = "aops-ceres"
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 
 INSTALL_REQUIRES = [
     "flask",
