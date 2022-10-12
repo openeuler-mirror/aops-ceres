@@ -15,6 +15,7 @@ import json
 import os
 import grp
 import pwd
+from socket import socket, AF_INET, SOCK_DGRAM
 from typing import Any, Dict, Union, List
 
 from ceres.models.custom_exception import InputError
@@ -375,3 +376,39 @@ class Collect:
             'content': content
         }
         return info
+
+    @staticmethod
+    def get_uuid() -> str:
+        """
+            get uuid about disk
+
+        Returns:
+            uuid(str)
+        """
+        try:
+            fstab_info = get_shell_data(['dmidecode'], key=False)
+            uuid_info = get_shell_data(['grep', 'UUID'], stdin=fstab_info.stdout)
+            fstab_info.stdout.close()
+        except InputError:
+            LOGGER.error(f'Get system uuid error!')
+            return ""
+        uuid = uuid_info.replace("-", "").split(':')[1].strip()
+        return uuid
+
+    @staticmethod
+    def get_host_ip() -> str:
+        """
+            get host ip by create udp package
+        Returns:
+            host ip(str)
+        """
+        sock = socket(AF_INET, SOCK_DGRAM)
+        try:
+            sock.connect(('8.8.8.8', 80))
+            host_ip = sock.getsockname()[0]
+        except OSError:
+            LOGGER.error("please check internet")
+            host_ip = ''
+        finally:
+            sock.close()
+        return host_ip

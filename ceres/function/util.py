@@ -13,21 +13,16 @@
 import configparser
 import json
 import os
-from socket import socket, AF_INET, SOCK_DGRAM
 from typing import Union, List, Any, Dict, NoReturn
 from subprocess import Popen, PIPE, STDOUT
 
-import requests
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
 
-from ceres.manages.token_manage import TokenManage
-from ceres.conf import configuration
-from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE, DEFAULT_TOKEN_PATH
+from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE
 from ceres.function.log import LOGGER
-from ceres.function.status import HTTP_CONNECT_ERROR, SUCCESS, PARAM_ERROR
 from ceres.models.custom_exception import InputError
-from ceres.function.schema import STRING_ARRAY, REGISTER_SCHEMA
+from ceres.function.schema import STRING_ARRAY
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:
@@ -146,42 +141,6 @@ def plugin_status_judge(plugin_name: str) -> str:
     return res
 
 
-def get_uuid() -> str:
-    """
-        get uuid about disk
-
-    Returns:
-        uuid(str)
-    """
-    try:
-        fstab_info = get_shell_data(['dmidecode'], key=False)
-        uuid_info = get_shell_data(['grep', 'UUID'], stdin=fstab_info.stdout)
-        fstab_info.stdout.close()
-    except InputError:
-        LOGGER.error(f'Get system uuid error!')
-        return ""
-    uuid = uuid_info.replace("-", "").split(':')[1].strip()
-    return uuid
-
-
-def get_host_ip() -> str:
-    """
-        get host ip by create udp package
-    Returns:
-        host ip(str)
-    """
-    sock = socket(AF_INET, SOCK_DGRAM)
-    try:
-        sock.connect(('8.8.8.8', 80))
-        host_ip = sock.getsockname()[0]
-    except OSError:
-        LOGGER.error("please check internet")
-        host_ip = ''
-    finally:
-        sock.close()
-    return host_ip
-
-
 def get_dict_from_file(file_path: str) -> Dict:
     """
         Get json data from file and return related dict
@@ -203,25 +162,6 @@ def get_dict_from_file(file_path: str) -> Dict:
     if not isinstance(data, dict):
         data = {}
     return data
-
-
-def register_info_to_dict(string: str) -> Dict:
-    """
-    Convert JSON string to dictionary
-    Args:
-        string(str)
-
-    Returns:
-        dict
-    """
-    try:
-        res = json.loads(string)
-    except json.decoder.JSONDecodeError:
-        LOGGER.error('Parameter error')
-        res = {}
-    if not isinstance(res, dict):
-        res = {}
-    return res
 
 
 def save_data_to_file(data: str,
@@ -268,55 +208,3 @@ def update_ini_data_value(file_path: str, section: str, option: str, value) -> N
     cf[section] = {option: value}
     with open(file_path, 'w') as f:
         cf.write(f)
-
-
-def register(register_info: dict) -> int:
-    """
-    register on manager
-    Args:
-        register_info(dict): It contains the necessary information to register an account
-        for example:
-        {
-          "web_username": "string",
-          "web_password": "string",
-          "manager_ip": "string",
-          "manager_port": "string",
-          "host_name": "string",
-          "host_group_name": "string",
-          "management": true,
-          "client_port": "12000"
-        }
-    Returns:
-        str: status code
-    """
-    if not validate_data(register_info, REGISTER_SCHEMA):
-        return PARAM_ERROR
-
-    data = {}
-    data['host_name'] = register_info.get('host_name')
-    data['host_group_name'] = register_info.get('host_group_name')
-    data['management'] = register_info.get('management') or False
-    data['username'] = register_info.get('web_username')
-    data['password'] = register_info.get('web_password')
-    data['host_id'] = get_uuid()
-    data['public_ip'] = get_host_ip()
-    data['client_port'] = register_info.get('client_port') or \
-                         configuration.ceres.get('PORT')
-
-    manager_ip = register_info.get('manager_ip')
-    manager_port = register_info.get('manager_port')
-    url = f'http://{manager_ip}:{manager_port}/manage/host/add'
-    try:
-        ret = requests.post(url, data=json.dumps(data),
-                            headers={'content-type': 'application/json'}, timeout=5)
-    except requests.exceptions.ConnectionError as e:
-        LOGGER.error(e)
-        return HTTP_CONNECT_ERROR
-    ret_data = json.loads(ret.text)
-    if ret_data.get('code') == SUCCESS:
-        TokenManage.set_value(ret_data.get('token'))
-        save_data_to_file(json.dumps({"access_token": ret_data.get('token')}),
-                          DEFAULT_TOKEN_PATH)
-        return SUCCESS
-    LOGGER.error(ret_data)
-    return int(ret_data.get('code'))

@@ -154,7 +154,7 @@ def ceres_plugin_info() -> Response:
         plugin_class_name = PLUGIN_WITH_CLASS.get(plugin_name, '')
         if hasattr(plugin_manage, plugin_class_name):
             plugin_obj = getattr(plugin_manage, plugin_class_name)
-            if hasattr(plugin_obj, 'get_collect_items'):
+            if hasattr(plugin_obj, 'get_collect_status'):
                 collect_items_status = plugin_obj.get_collect_status()
 
         resource = []
