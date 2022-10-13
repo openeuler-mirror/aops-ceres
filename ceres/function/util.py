@@ -36,8 +36,10 @@ def load_conf(file_path: str) -> configparser.RawConfigParser:
     cf = configparser.RawConfigParser()
     try:
         cf.read(file_path, encoding='utf8')
-    except FileNotFoundError:
-        LOGGER.error('file not found')
+    except configparser.MissingSectionHeaderError:
+        LOGGER.error(f'Failed to parse {file_path}, file contains no section headers.')
+    except configparser.ParsingError:
+        LOGGER.error(f'Failed to parse {file_path}.')
     return cf
 
 
@@ -52,13 +54,12 @@ def validate_data(data: Any, schema: dict) -> bool:
     Returns:
         bool
 
-    Raises:
-        ValidationError: the data structure isn't we expected
     """
     try:
         validate(instance=data, schema=schema)
         return True
     except ValidationError:
+        LOGGER.error(f"The input data does not match the target type.")
         return False
 
 
@@ -106,10 +107,10 @@ def load_gopher_config(gopher_config_path: str) -> AttrDict:
         with open(gopher_config_path, 'r', encoding='utf8') as file:
             cfg = load(file)
     except FileNotFoundError:
-        LOGGER.error('gopher config not found')
+        LOGGER.error(f"Can't find file {gopher_config_path}.")
         return AttrDict()
     except ConfigParseError:
-        LOGGER.error('gopher config file corrupted')
+        LOGGER.error(f'Failed to parse file {gopher_config_path}.')
         return AttrDict()
     return cfg
 
@@ -127,8 +128,12 @@ def plugin_status_judge(plugin_name: str) -> str:
     if plugin_name in INFORMATION_ABOUT_RPM_SERVICE.keys():
         service_name = INFORMATION_ABOUT_RPM_SERVICE.get(plugin_name).get('service_name')
         if service_name is None:
+            LOGGER.warning(f"Fail to get service name about {plugin_name},"
+                           f"please check that the project file is complete.")
             return ""
     else:
+        LOGGER.debug(f'Input plugin {plugin_name} is not supported, '
+                     f'please check and try again')
         return ""
 
     try:
@@ -157,7 +162,8 @@ def get_dict_from_file(file_path: str) -> Dict:
         LOGGER.error('file not found')
         data = {}
     except json.decoder.JSONDecodeError:
-        LOGGER.error('file structure is not json')
+        LOGGER.error('Json conversion error, the file content'
+                     ' structure is not json format.')
         data = {}
     if not isinstance(data, dict):
         data = {}
@@ -191,17 +197,8 @@ def update_ini_data_value(file_path: str, section: str, option: str, value) -> N
         option(str):    option name
         value(str)      section value
 
-
     """
-    cf = configparser.ConfigParser()
-    try:
-        cf.read(file_path, encoding='utf8')
-    except FileNotFoundError:
-        LOGGER.error('ceres config file has been deleted')
-    except configparser.MissingSectionHeaderError:
-        LOGGER.error('ceres config file has been damaged')
-    except configparser.ParsingError:
-        LOGGER.error('ceres config file has been damaged')
+    cf = load_conf(file_path)
     file_dir_path = os.path.dirname(file_path)
     if not os.path.exists(file_dir_path):
         os.makedirs(file_dir_path)

@@ -97,13 +97,14 @@ class Collect:
         try:
             os_data = get_shell_data(['cat', '/etc/os-release'])
         except InputError:
-            LOGGER.error('Get system info error,linux has no command!')
+            LOGGER.error('Failed to get system version info,linux has no command!')
             return ''
 
         res = re.search('(?=PRETTY_NAME=).+', os_data)
         if res:
             return res.group()[12:].strip('"')
-        LOGGER.warning('Get os version fail, please check file /etc/os-release and try it again')
+        LOGGER.warning('Failed to get os version info, '
+                       'please check file /etc/os-release and try it again')
         return ''
 
     def _get_os_info(self) -> Dict[str, str]:
@@ -135,14 +136,14 @@ class Collect:
         try:
             bios_data = get_shell_data(['dmidecode', '-t', 'bios'])
         except InputError:
-            LOGGER.error('Get system info error,linux has no command dmidecode!')
+            LOGGER.error('Failed to get system info,linux has no command dmidecode!')
             return ''
 
         res = re.search('(?=Version:).+', bios_data)
 
         if res:
             return res.group()[8:].strip()
-        LOGGER.warning('Get bios version fail, please check dmidecode and try it again')
+        LOGGER.warning('Failed to get bios version, please check dmidecode and try it again')
         return ''
 
     @staticmethod
@@ -156,12 +157,12 @@ class Collect:
         try:
             kernel_data = get_shell_data(['uname', '-r'])
         except InputError:
-            LOGGER.error('Get system info error,linux has no command!')
+            LOGGER.error('Failed to get kernel version info,linux has no command!')
             return ''
         res = re.search(r'[\d\.]+-[\d\.]+[\d]', kernel_data)
         if res:
             return res.group()
-        LOGGER.warning('Get kernel version fail, please check dmidecode and try it again')
+        LOGGER.warning('Failed to get kernel version, please check dmidecode and try it again')
         return ''
 
     @staticmethod
@@ -185,7 +186,7 @@ class Collect:
         try:
             lscpu_data = get_shell_data(['lscpu'], env={"LANG": "en_US.utf-8"})
         except InputError:
-            LOGGER.error('Get cpu info error,linux has no command lscpu or grep.')
+            LOGGER.error('Failed to get cpu info,linux has no command lscpu or grep.')
             return {}
 
         info_list = re.findall('.+:.+', lscpu_data)
@@ -221,13 +222,13 @@ class Collect:
         try:
             lsmem_data = get_shell_data(['lsmem'])
         except InputError:
-            LOGGER.error('Get host memory info error, Linux has no command dmidecode')
+            LOGGER.error('Failed to get  host memory info, Linux has no command dmidecode')
             return ''
 
         res = re.search("(?=Total online memory:).+", lsmem_data)
         if res:
             return res.group()[20:].strip()
-        LOGGER.warning('Get Total online memory fail, please check lsmem and try it again')
+        LOGGER.warning('Failed to get total online memory, please check lsmem and try it again')
         return ''
 
     def _get_memory_info(self) -> Dict[str, Union[int, List[Dict[str, Any]]]]:
@@ -258,7 +259,7 @@ class Collect:
         try:
             memory_data = get_shell_data(['dmidecode', '-t', 'memory']).split('Memory Device')
         except InputError:
-            LOGGER.error('Get host memory info error, Linux has no command dmidecode')
+            LOGGER.error('Failed to get host memory info, Linux has no command dmidecode')
             return res
 
         if len(memory_data) == 1:
@@ -318,7 +319,7 @@ class Collect:
         try:
             disk_info_list = json.loads(lshw_data)
         except json.decoder.JSONDecodeError:
-            LOGGER.warning("unexpected execution result, "
+            LOGGER.warning("Json conversion error, "
                            "please check command 'lshw -json -c disk'")
             disk_info_list = []
 
@@ -390,7 +391,7 @@ class Collect:
             uuid_info = get_shell_data(['grep', 'UUID'], stdin=fstab_info.stdout)
             fstab_info.stdout.close()
         except InputError:
-            LOGGER.error(f'Get system uuid error!')
+            LOGGER.error(f'Failed to get system uuid!')
             return ""
         uuid = uuid_info.replace("-", "").split(':')[1].strip()
         return uuid
@@ -407,7 +408,7 @@ class Collect:
             sock.connect(('8.8.8.8', 80))
             host_ip = sock.getsockname()[0]
         except OSError:
-            LOGGER.error("please check internet")
+            LOGGER.error("Failed to get host ip, please check internet and try again.")
             host_ip = ''
         finally:
             sock.close()

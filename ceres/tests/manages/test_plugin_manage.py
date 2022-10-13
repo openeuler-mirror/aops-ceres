@@ -281,3 +281,70 @@ class TestPluginManage(unittest.TestCase):
         mock_judge_res.return_value = False
         res = Plugin.get_installed_plugin()
         self.assertEqual([], res)
+
+    @mock.patch.object(mock.Mock, 'stdout', create=True)
+    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
+    def test_get_pid_should_return_pid_string_when_all_is_right(self, mock_shell, mock_stdout):
+        mock_shell.side_effect = (mock.Mock, 'Main PID: 749')
+        mock_stdout.return_value = None
+        mock_shell.stdout.return_value = ''
+        res = Plugin.get_pid('')
+        self.assertEqual('749', res)
+
+    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
+    def test_get_pid_should_return_empty_string_when_command_execution_failed(self, mock_shell):
+        mock_shell.side_effect = InputError('')
+        res = Plugin.get_pid('')
+        self.assertEqual('', res)
+
+    @mock.patch.object(mock.Mock, 'stdout', create=True)
+    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
+    def test_get_plugin_status_should_return_plugin_status_when_all_is_right(
+            self, mock_shell, mock_stdout):
+        mock_shell.side_effect = (mock.Mock, 'Active: active (running)')
+        mock_stdout.return_value = None
+        mock_shell.stdout.return_value = ''
+        res = Plugin('').get_plugin_status()
+        self.assertEqual('active', res)
+
+    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
+    def test_get_plugin_status_should_return_empty_string_when_command_execution_failed(
+            self, mock_shell):
+        mock_shell.side_effect = InputError('')
+        res = Plugin('').get_plugin_status()
+        self.assertEqual('', res)
+
+    @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
+    def test_get_collect_items_should_return_collect_items_when_load_gopher_config_succeed(
+            self, mock_gopher_config):
+
+        mock_gopher_config.return_value = AttrDict([
+            ('probes', (
+                AttrDict([('name', 'probe1'), ('switch', 'on')]),
+                AttrDict([('name', 'probe2'), ('switch', 'off')])
+            )),
+            ('extend_probes', (
+                AttrDict([('name', 'probe3'), ('switch', 'off')]),
+                AttrDict([('name', 'probe4'), ('start_check', 'mock'), ('switch', 'auto')])
+            ))
+        ])
+        res = GalaGopher.get_collect_items()
+        expect_res = {'probe1', 'probe2', 'probe3', 'probe4'}
+        self.assertEqual(expect_res, res)
+
+    @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
+    def test_get_collect_items_should_return_empty_set_when_load_gopher_config_failed(
+            self, mock_gopher_config):
+        mock_gopher_config.return_value = AttrDict([
+            ('probes', (
+                AttrDict([('name', 'probe1'), ('switch', 'on')]),
+                AttrDict([('name', 'probe2'), ('switch', 'off')])
+            )),
+            ('extend_probes', (
+                AttrDict([('name', 'probe3'), ('switch', 'off')]),
+                AttrDict([('name', 'probe4'), ('switch', 'auto')])
+            ))
+        ])
+        res = GalaGopher.get_collect_items()
+        expect_res = {'probe1', 'probe2', 'probe3', 'probe4'}
+        self.assertEqual(expect_res, res)

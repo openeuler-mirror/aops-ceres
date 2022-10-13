@@ -37,7 +37,8 @@ def register_info_to_dict(string: str) -> Dict:
     try:
         res = json.loads(string)
     except json.decoder.JSONDecodeError:
-        LOGGER.error('Parameter error')
+        LOGGER.error('Json conversion error, the data entered is not'
+                     ' json format.')
         res = {}
     if not isinstance(res, dict):
         res = {}

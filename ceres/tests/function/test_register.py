@@ -14,11 +14,11 @@ import unittest
 
 import responses
 
-from ceres.function.register import register
+from ceres.function.register import register, register_info_to_dict
 from ceres.function.status import SUCCESS, PARAM_ERROR
 
 
-class TestUtils(unittest.TestCase):
+class TestRegister(unittest.TestCase):
 
     @responses.activate
     def test_register_should_return_200_when_input_correct(self):
@@ -248,3 +248,18 @@ class TestUtils(unittest.TestCase):
         }
         data = register(input_data)
         self.assertEqual(SUCCESS, data)
+
+    def test_register_info_to_dict_should_return_dict_info_when_input_is_correct(self):
+        mock_string = '{"mock": "mock"}'
+        res = register_info_to_dict(mock_string)
+        self.assertEqual({'mock': 'mock'}, res)
+
+    def test_register_info_to_dict_should_return_empty_dict_when_input_is_incorrect(self):
+        mock_string = '["mock"]'
+        res = register_info_to_dict(mock_string)
+        self.assertEqual({}, res)
+
+    def test_register_info_to_dict_should_return_empty_dict_when_input_is_not_json_string(self):
+        mock_string = '{mock'
+        res = register_info_to_dict(mock_string)
+        self.assertEqual({}, res)
