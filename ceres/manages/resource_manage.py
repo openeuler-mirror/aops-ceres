@@ -40,7 +40,7 @@ class Resource:
             memory_info.stdout.close()
 
         except InputError:
-            LOGGER.error(f'Get process {pid} memory fail!')
+            LOGGER.error(f'Failed to get memory info of process {pid}!')
             return ''
         return memory
 
@@ -64,8 +64,12 @@ class Resource:
         try:
             memory_high = config.get("Service", "MemoryHigh")
         except configparser.NoOptionError:
+            LOGGER.warning('There is no option "MemoryHigh" in section "Service"'
+                           f' in file {service_path},please check and try again.')
             memory_high = None
         except configparser.NoSectionError:
+            LOGGER.warning(f'There is no section "Service" in file {service_path} ,'
+                           'please check and try again.')
             memory_high = None
         return memory_high
 
@@ -95,7 +99,7 @@ class Resource:
             plugin_main_pid_process_info.stdout.close()
 
         except InputError:
-            LOGGER.error(f'Get plugin {rpm_name} cpu info fail!')
+            LOGGER.error(f'Failed to get plugin cpu info about {rpm_name}.')
             return ''
 
         return f'{cpu_usage.strip()}%'
@@ -120,7 +124,11 @@ class Resource:
         try:
             cpu_limit = config.get("Service", "CPUQuota")
         except configparser.NoOptionError:
+            LOGGER.warning('There is no option "CPUQuota" in section "Service"'
+                           f' in file {service_path},please check and try again.')
             cpu_limit = None
         except configparser.NoSectionError:
+            LOGGER.warning(f'There is no section "Service" in file {service_path} ,'
+                           'please check and try again.')
             cpu_limit = None
         return cpu_limit

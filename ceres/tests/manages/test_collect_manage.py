@@ -21,6 +21,16 @@ from ceres.manages.collect_manage import Collect
 from ceres.models.custom_exception import InputError
 
 
+class Socket:
+    def connect(self):
+        pass
+
+    def getsockname(self):
+        pass
+
+    def close(self):
+        pass
+
 class TestCollectManage(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -333,3 +343,36 @@ class TestCollectManage(unittest.TestCase):
             mock_file.side_effect = UnicodeDecodeError('', bytes(), 1, 1, '')
             info = Collect.get_file_info(file_path)
         self.assertEqual({}, info)
+
+    @mock.patch.object(mock.Mock, 'stdout', create=True)
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_uuid_should_return_uuid_string_when_all_is_right(
+            self, mock_shell, mock_stdout):
+        mock_shell.side_effect = (mock.Mock, 'UUID: m-o-c-k-uuid')
+        mock_stdout.return_value = None
+        mock_shell.stdout.return_value = ''
+        res = Collect.get_uuid()
+        self.assertEqual('mockuuid', res)
+
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_uuid_should_return_empty_string_when_command_execution_failed(
+            self, mock_shell):
+        mock_shell.side_effect = InputError('')
+        res = Collect.get_uuid()
+        self.assertEqual('', res)
+
+    @mock.patch("ceres.manages.collect_manage.socket")
+    def test_get_host_ip_should_return_host_ip_when_all_is_right(self, mock_socket):
+        Socket.connect = mock.Mock(return_value='')
+        Socket.getsockname = mock.Mock(return_value=('mock_host_ip',))
+        Socket.close =  mock.Mock(return_value='')
+        mock_socket.return_value = Socket()
+        res = Collect.get_host_ip()
+        self.assertEqual('mock_host_ip', res)
+
+    @mock.patch("ceres.manages.collect_manage.socket")
+    def test_get_host_ip_should_return_empty_string_when_socket_connect_failed(self, mock_socket):
+        Socket.connect = mock.Mock(side_effect=OSError())
+        mock_socket.return_value = Socket()
+        res = Collect.get_host_ip()
+        self.assertEqual('', res)

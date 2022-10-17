@@ -66,7 +66,7 @@ class Plugin:
             return SUCCESS
 
         except InputError:
-            LOGGER.error(f'Get service {self.rpm_name} status error!')
+            LOGGER.error(f'Failed to get service {self.rpm_name} status!')
             return SERVICE_NOT_EXIST
 
     def stop_service(self) -> int:
@@ -90,7 +90,7 @@ class Plugin:
             return SUCCESS
 
         except InputError:
-            LOGGER.error(f'Get service {self.rpm_name} status error!')
+            LOGGER.error(f'Failed to get service {self.rpm_name} status!')
             return SERVICE_NOT_EXIST
 
     @classmethod
@@ -125,7 +125,7 @@ class Plugin:
             active_string = get_shell_data(["grep", "Active"], stdin=plugin_status.stdout)
             plugin_status.stdout.close()
         except InputError:
-            LOGGER.error(f'Get service {self.rpm_name} status error!')
+            LOGGER.error(f'Failed to get service {self.rpm_name} status!')
             return ""
 
         status = re.search(r':.+\(', active_string).group()[1:-1].strip()
@@ -143,7 +143,7 @@ class Plugin:
             res = get_shell_data(["systemctl", "status", f"{rpm_name}"], key=False)
             main_pid_info = get_shell_data(["grep", "Main"], stdin=res.stdout)
         except InputError:
-            LOGGER.error(f"Get {rpm_name} pid fail ")
+            LOGGER.error(f"Failed to get {rpm_name} pid")
             return ""
         main_pid = re.search("[0-9]+[0-9]", main_pid_info).group()
         return main_pid
