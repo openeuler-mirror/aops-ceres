@@ -50,7 +50,7 @@ REGISTER_HELP_INFO = """
     manager_port            type: string
     
     optional parameter: 
-    client_port              type: string
+    agent_port              type: string
     
     for example:
     {
@@ -61,7 +61,7 @@ REGISTER_HELP_INFO = """
     "manager_ip":"192.168.xx.xx",
     "management":false,
     "manager_port":"11111",
-    "client_port":"12000"
+    "agent_port":"12000"
     }
 
 """

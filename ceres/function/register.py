@@ -59,7 +59,7 @@ def register(register_info: dict) -> int:
           "host_name": "string",
           "host_group_name": "string",
           "management": true,
-          "client_port": "12000"
+          "agent_port": "12000"
         }
     Returns:
         str: status code
@@ -75,7 +75,7 @@ def register(register_info: dict) -> int:
     data['password'] = register_info.get('web_password')
     data['host_id'] = Collect.get_uuid()
     data['public_ip'] = Collect.get_host_ip()
-    data['client_port'] = register_info.get('client_port') or \
+    data['agent_port'] = register_info.get('agent_port') or \
                           configuration.ceres.get('PORT')
 
     manager_ip = register_info.get('manager_ip')
