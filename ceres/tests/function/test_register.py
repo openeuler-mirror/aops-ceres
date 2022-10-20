@@ -11,6 +11,7 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import unittest
+from unittest import mock
 
 import responses
 
@@ -21,6 +22,7 @@ from ceres.function.status import SUCCESS, PARAM_ERROR
 class TestRegister(unittest.TestCase):
 
     @responses.activate
+    @mock.patch('builtins.open', mock.mock_open())
     def test_register_should_return_200_when_input_correct(self):
         input_data = {
             "web_username": "admin",
@@ -30,7 +32,7 @@ class TestRegister(unittest.TestCase):
             "management": False,
             "manager_ip": "127.0.0.1",
             "manager_port": "11111",
-            "client_port": "12000"
+            "agent_port": "12000"
         }
         responses.add(responses.POST,
                       'http://127.0.0.1:11111/manage/host/add',
@@ -215,7 +217,7 @@ class TestRegister(unittest.TestCase):
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
 
-    def test_register_should_return_param_error_when_input_client_port_is_not_string(self):
+    def test_register_should_return_param_error_when_input_agent_port_is_not_string(self):
         input_data = {
             "web_username": "admin",
             "web_password": "changeme",
@@ -224,13 +226,14 @@ class TestRegister(unittest.TestCase):
             "management": False,
             "manager_ip": "127.0.0.1",
             "manager_port": "11111",
-            "client_port": 11000
+            "agent_port": 11000
         }
         data = register(input_data)
         self.assertEqual(data, PARAM_ERROR)
 
     @responses.activate
-    def test_register_should_return_success_when_input_with_no_client_port(self):
+    @mock.patch('builtins.open', mock.mock_open())
+    def test_register_should_return_success_when_input_with_no_agent_port(self):
         responses.add(responses.POST,
                       'http://127.0.0.1:11111/manage/host/add',
                       json={"token": "hdahdahiudahud", "code": SUCCESS},

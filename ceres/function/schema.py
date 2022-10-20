@@ -46,6 +46,6 @@ REGISTER_SCHEMA = {
         "management": {"enum": [True, False]},
         "manager_ip": {"type": "string", "minLength": 8},
         "manager_port": {"type": "string", "minLength": 2},
-        "client_port": {"type": "string", "minLength": 1}
+        "agent_port": {"type": "string", "minLength": 1}
     }
 }
