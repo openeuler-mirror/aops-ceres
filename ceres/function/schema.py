@@ -49,3 +49,30 @@ REGISTER_SCHEMA = {
         "agent_port": {"type": "string", "minLength": 1}
     }
 }
+
+REPO_SET_SCHEMA = {
+    "type": "object",
+    "required": [
+        "repo_info",
+        "check_items",
+        "check"
+    ],
+    "properties": {
+        "repo_info": {
+            "type": "object",
+            "required": ["name", "repo_content", "dest"],
+            "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "repo_content": {"type": "string", "minLength": 1},
+                "dest": {"type": "string", "minLength": 1}
+            }
+        },
+        "check_items": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "check": {"enum": [True, False]}
+    }
+}

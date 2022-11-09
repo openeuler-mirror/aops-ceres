@@ -7,6 +7,7 @@ basePath: "/v1/ceres"
 tags:
 - name: "ceres"
 - name: "plugin"
+- name: "apollo"
 schemes:
 - "https"
 paths:
@@ -186,6 +187,30 @@ paths:
           schema:
             $ref: '#/definitions/resp_collect_file'
       x-swagger-router-controller: "ceres.controllers.collect_controller"
+  /cve/repo/set:
+    post:
+      tags:
+        - apollo
+      description: repo file set
+      operationId: repo_set
+      parameters:
+        - name: data
+          in: body
+          required: true
+          description: repo information
+          schema:
+            $ref: '#/definitions/RepoSetReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        "200":
+          description: ''
+          schema:
+            $ref: "#/definitions/GeneralRsp"
+      x-swagger-router-controller: "ceres.controllers.vulnerability_controller"
 definitions:
   ErrorRsp:
     required:
@@ -414,3 +439,30 @@ definitions:
             - fail_files
             - infos
         description: 响应体
+  RepoSetReq:
+    properties:
+      repo_info:
+        type: object
+        properties:
+          name:
+            description: repo文件名
+            type: string
+          dest:
+            type: string
+            description: repo文件保存位置
+            example: /etc/yum.repos.d/aops-update.repo
+          repo_content:
+            description: repo文件内容
+            type: string
+      check_items:
+        type: array
+        items:
+          type: string
+      check:
+        type: boolean
+  GeneralRsp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string

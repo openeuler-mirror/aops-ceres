@@ -21,6 +21,7 @@ HTTP_CONNECT_ERROR = 1001
 UNKNOWN_ERROR = 1002
 SERVICE_NOT_EXIST = 1003
 TOKEN_ERROR = 1201
+REPO_CONTENT_INCORRECT = 1010
 
 
 class StatusCode:
@@ -54,6 +55,9 @@ class StatusCode:
         },
         SERVICE_NOT_EXIST: {
             "msg": "the service is not found"
+        },
+        REPO_CONTENT_INCORRECT: {
+            "msg": "repo content cannot parse by yum"
         }
     }
 
