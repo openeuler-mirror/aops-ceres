@@ -22,6 +22,7 @@ UNKNOWN_ERROR = 1002
 SERVICE_NOT_EXIST = 1003
 TOKEN_ERROR = 1201
 REPO_CONTENT_INCORRECT = 1010
+REPO_NOT_SET = 1011
 
 
 class StatusCode:
@@ -58,6 +59,9 @@ class StatusCode:
         },
         REPO_CONTENT_INCORRECT: {
             "msg": "repo content cannot parse by yum"
+        },
+        REPO_NOT_SET: {
+            "msg": "repo source named update is not set"
         }
     }
 

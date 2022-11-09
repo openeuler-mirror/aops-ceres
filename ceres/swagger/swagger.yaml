@@ -211,6 +211,31 @@ paths:
           schema:
             $ref: "#/definitions/GeneralRsp"
       x-swagger-router-controller: "ceres.controllers.vulnerability_controller"
+  /cve/scan:
+    post:
+      tags:
+      - apollo
+      description: 提供cve扫描命令支持接口
+      operationId: vulnerability_cve_scan
+      parameters:
+        - in: body
+          name: scan_info
+          required: true
+          description: 扫描命令集
+          schema:
+            $ref: '#/definitions/CveScanReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        "200":
+          description: 扫描结果
+          schema:
+            $ref: '#/definitions/CveScanRsp'
+      x-swagger-router-controller: "ceres.controllers.vulnerability_controller"
+
 definitions:
   ErrorRsp:
     required:
@@ -460,9 +485,38 @@ definitions:
           type: string
       check:
         type: boolean
+
   GeneralRsp:
     properties:
       code:
         type: integer
       msg:
         type: string
+  CveScanReq:
+    properties:
+      check_items:
+        type: array
+        items:
+          type: string
+      check:
+          type: boolean
+      basic:
+        type: boolean
+  CveScanRsp:
+    allOf:
+      - $ref: "#/definitions/GeneralRsp"
+      - type: object
+        properties:
+          result:
+            type: object
+            properties:
+              cves:
+                type: array
+                items:
+                  type: string
+              os_version:
+                  type: string
+              installed_packages:
+                type: array
+                items:
+                  type: string

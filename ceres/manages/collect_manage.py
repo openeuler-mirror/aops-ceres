@@ -87,7 +87,7 @@ class Collect:
         return host_info
 
     @staticmethod
-    def __get_system_info() -> str:
+    def get_system_info() -> str:
         """
             get system name and its version
 
@@ -119,7 +119,7 @@ class Collect:
                 }
         """
         res = {
-            'os_version': self.__get_system_info(),
+            'os_version': self.get_system_info(),
             'bios_version': self.__get_bios_version(),
             'kernel': self.__get_kernel_version()
         }
@@ -413,3 +413,24 @@ class Collect:
         finally:
             sock.close()
         return host_ip
+
+    @staticmethod
+    def get_installed_packages():
+        """
+        query installed packages
+
+        Returns:
+            list: e.g
+                [ pcakage-version-1,pcakage-version-2]
+        """
+        try:
+            package_info = get_shell_data(['rpm', '-qai'], key=False)
+            pkg_src_name = get_shell_data(["grep", "Source RPM"], stdin=package_info.stdout)
+        except InputError:
+            LOGGER.error("Failed to query installed packages.")
+            return []
+
+        package_list = set()
+        for package_source_name in pkg_src_name.splitlines():
+            package_list.add(package_source_name.rsplit("-", 2)[0].split(':')[1].strip())
+        return list(package_list)
