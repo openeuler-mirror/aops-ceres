@@ -95,3 +95,29 @@ CVE_SCAN_SCHEMA = {
         "basic": {"enum": [True, False]},
     }
 }
+
+CVE_FIX_SCHEMA = {
+    "type": "object",
+    "required": [
+        "check",
+        "check_items",
+        "cves"
+    ],
+    "properties": {
+        "check_items": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "check": {"enum": [True, False]},
+        "cves": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "minItems": 1
+        }
+    }
+}
