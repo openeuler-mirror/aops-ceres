@@ -18,6 +18,8 @@ BASE_SERVICE_PATH = '/usr/lib/systemd/system'
 CERES_CONFIG_PATH = os.path.join(BASE_CONFIG_PATH, 'ceres.conf')
 DEFAULT_TOKEN_PATH = os.path.join(BASE_CONFIG_PATH, 'ceres_token.json')
 
+REPO_ID_FOR_CVE_MANAGE = 'aops-update'
+
 INSTALLABLE_PLUGIN = ['gala-gopher']
 INFORMATION_ABOUT_RPM_SERVICE = {
     "gala-gopher": {"rpm_name": "gala-gopher", "service_name": "gala-gopher"},

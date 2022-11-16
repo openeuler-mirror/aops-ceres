@@ -31,6 +31,7 @@ class Socket:
     def close(self):
         pass
 
+
 class TestCollectManage(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -276,21 +277,21 @@ class TestCollectManage(unittest.TestCase):
                     ANSI_COLOR="0;31"
         """
         expect_res = 'openEuler 21.09'
-        res = Collect._Collect__get_system_info()
+        res = Collect.get_system_info()
         self.assertEqual(expect_res, res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_system_info_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
             self, mock_shell_data):
         mock_shell_data.return_value = 'test_info'
-        res = Collect._Collect__get_system_info()
+        res = Collect.get_system_info()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_system_info_should_return_cpu_info_when_host_has_no_command_cat(self,
                                                                                  mock_shell_data):
         mock_shell_data.side_effect = InputError('')
-        res = Collect._Collect__get_system_info()
+        res = Collect.get_system_info()
         self.assertEqual('', res)
 
     @mock.patch.object(pwd, 'getpwuid')
@@ -365,7 +366,7 @@ class TestCollectManage(unittest.TestCase):
     def test_get_host_ip_should_return_host_ip_when_all_is_right(self, mock_socket):
         Socket.connect = mock.Mock(return_value='')
         Socket.getsockname = mock.Mock(return_value=('mock_host_ip',))
-        Socket.close =  mock.Mock(return_value='')
+        Socket.close = mock.Mock(return_value='')
         mock_socket.return_value = Socket()
         res = Collect.get_host_ip()
         self.assertEqual('mock_host_ip', res)
@@ -376,3 +377,26 @@ class TestCollectManage(unittest.TestCase):
         mock_socket.return_value = Socket()
         res = Collect.get_host_ip()
         self.assertEqual('', res)
+
+    @mock.patch.object(mock.Mock, 'stdout', create=True)
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_installed_package_should_return_installed_packages_when_execute_command_successfully(
+            self, mock_shell_data, mock_stdout):
+        mock_stdout.return_value = None
+        mock_shell_data.stdout.return_value = ''
+        mock_shell_data.side_effect = (mock.Mock(),
+                                       "Source RPM  : perl-Encode-Locale-1.05-12.oe1.src.rpm\n"
+                                       "Source RPM: glib-networking-2.58.0-7.oe1.src.rpm\n"
+                                       "Source RPM: dnf-4.2.15-8.oe1.src.rpm")
+        expected_result = {
+            "dnf",
+            "glib-networking",
+            "perl-Encode-Locale"
+        }
+        self.assertEqual(expected_result, set(Collect.get_installed_packages()))
+
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_installed_package_should_return_empty_list_when_execute_command_failed(
+            self, mock_shell_data):
+        mock_shell_data.side_effect = InputError('')
+        self.assertEqual([], Collect.get_installed_packages())
