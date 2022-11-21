@@ -235,7 +235,30 @@ paths:
           schema:
             $ref: '#/definitions/CveScanRsp'
       x-swagger-router-controller: "ceres.controllers.vulnerability_controller"
-
+  /cve/fix:
+    post:
+      tags:
+        - apollo
+      description: cve修复支持接口
+      operationId: vulnerability_cve_fix
+      parameters:
+        - in: body
+          name: cve_info
+          required: true
+          description: 需要修复的CVE ID列表
+          schema:
+            $ref: '#/definitions/CveFixReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        "200":
+          description: 修复结果
+          schema:
+            $ref: '#/definitions/CveFixRsp'
+      x-swagger-router-controller: "ceres.controllers.vulnerability_controller"
 definitions:
   ErrorRsp:
     required:
@@ -515,8 +538,38 @@ definitions:
                 items:
                   type: string
               os_version:
-                  type: string
+                type: string
               installed_packages:
                 type: array
                 items:
                   type: string
+  CveFixReq:
+    properties:
+      check_items:
+        type: array
+        items:
+          type: string
+      check:
+        type: boolean
+      cve_list:
+        type: array
+        items:
+          type: string
+  CveFixRsp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      result:
+        type: array
+        items:
+          type: object
+          description: 修复结果
+          properties:
+            cve_id:
+              type: string
+            result:
+              type: boolean
+            log:
+              type: string
