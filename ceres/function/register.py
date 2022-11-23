@@ -77,6 +77,7 @@ def register(register_info: dict) -> int:
     data['public_ip'] = Collect.get_host_ip()
     data['agent_port'] = register_info.get('agent_port') or \
                           configuration.ceres.get('PORT')
+    data["os_version"] = Collect.get_system_info()
 
     manager_ip = register_info.get('manager_ip')
     manager_port = register_info.get('manager_port')
