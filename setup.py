@@ -14,8 +14,7 @@ INSTALL_REQUIRES = [
     "libconf",
     "connexion",
     "swagger-ui-bundle>=0.0.2",
-    "concurrent_log_handler",
-    "responses"
+    "concurrent_log_handler"
 ]
 
 setup(
