@@ -102,7 +102,7 @@ class Collect:
 
         res = re.search('(?=PRETTY_NAME=).+', os_data)
         if res:
-            return res.group()[12:].strip('"')
+            return res.group()[12:].strip('"').replace(' ', '-')
         LOGGER.warning('Failed to get os version info, '
                        'please check file /etc/os-release and try it again')
         return ''

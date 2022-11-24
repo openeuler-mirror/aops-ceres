@@ -276,7 +276,7 @@ class TestCollectManage(unittest.TestCase):
                     PRETTY_NAME="openEuler 21.09"
                     ANSI_COLOR="0;31"
         """
-        expect_res = 'openEuler 21.09'
+        expect_res = 'openEuler-21.09'
         res = Collect.get_system_info()
         self.assertEqual(expect_res, res)
 
