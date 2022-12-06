@@ -28,6 +28,7 @@ setup(
     packages=find_packages(),
     data_files=[
         ('/etc/aops', ['conf/ceres.conf']),
+        ('/opt/aops', ['conf/register_example.json']),
         ('/usr/lib/systemd/system', ['aops-ceres.service']),
     ],
     package_data={'': ['swagger/swagger.yaml']},

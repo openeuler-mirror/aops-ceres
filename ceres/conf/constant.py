@@ -45,25 +45,25 @@ REGISTER_HELP_INFO = """
     Required parameter: All information cannot be empty
     host_name               type: string
     host_group_name         type: string
-    web_username            type: string
-    web_password            type: string
+    username                type: string
+    password                type: string
     management              type: boolean,only True or False
-    manager_ip              type: string
-    manager_port            type: string
+    zeus_ip                 type: string
+    zeus_port               type: string
     
     optional parameter: 
-    agent_port              type: string
+    ceres_port              type: string
     
     for example:
     {
-    "web_username":"xxx",
-    "web_password": "xxx",
-    "host_name": "xxx",
-    "host_group_name": "xxx", 
-    "manager_ip":"192.168.xx.xx",
-    "management":false,
-    "manager_port":"11111",
-    "agent_port":"12000"
+        "username":"xxx",
+        "password": "xxx",
+        "host_name": "xxx",
+        "host_group_name": "xxx", 
+        "zeus_ip":"192.168.xx.xx",
+        "management":false,
+        "zeus_port":"11111",
+        "ceres_port":"12000"
     }
 
 """
