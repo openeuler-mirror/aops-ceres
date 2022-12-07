@@ -61,7 +61,7 @@ class StatusCode:
             "msg": "repo content cannot parse by yum"
         },
         REPO_NOT_SET: {
-            "msg": "repo source named update is not set"
+            "msg": "repo source named aops-update is not set"
         }
     }
 
