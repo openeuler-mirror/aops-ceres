@@ -32,21 +32,21 @@ REGISTER_SCHEMA = {
     "required": [
         "host_name",
         "host_group_name",
-        "web_username",
-        "web_password",
+        "username",
+        "password",
         "management",
-        "manager_ip",
-        "manager_port"
+        "zeus_ip",
+        "zeus_port"
     ],
     "properties": {
         "host_name": {"type": "string", "minLength": 1},
         "host_group_name": {"type": "string", "minLength": 1},
-        "web_username": {"type": "string", "minLength": 1},
-        "web_password": {"type": "string", "minLength": 1},
+        "username": {"type": "string", "minLength": 1},
+        "password": {"type": "string", "minLength": 1},
         "management": {"enum": [True, False]},
-        "manager_ip": {"type": "string", "minLength": 8},
-        "manager_port": {"type": "string", "minLength": 2},
-        "agent_port": {"type": "string", "minLength": 1}
+        "zeus_ip": {"type": "string", "minLength": 8},
+        "zeus_port": {"type": "string", "minLength": 2},
+        "ceres_port": {"type": "string", "minLength": 1}
     }
 }
 

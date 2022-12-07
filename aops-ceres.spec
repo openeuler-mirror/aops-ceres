@@ -34,6 +34,7 @@ An agent which needs to be adopted in client, it managers some plugins, such as 
 %files
 %doc README.*
 %attr(0644,root,root) %{_sysconfdir}/aops/ceres.conf
+%attr(0644,root,root) /opt/aops/register_example.json
 %attr(0755,root,root) %{_unitdir}/aops-ceres.service
 %{python3_sitelib}/aops_ceres*.egg-info
 %{python3_sitelib}/ceres/*

@@ -52,14 +52,14 @@ def register(register_info: dict) -> int:
         register_info(dict): It contains the necessary information to register an account
         for example:
         {
-          "web_username": "string",
-          "web_password": "string",
-          "manager_ip": "string",
-          "manager_port": "string",
-          "host_name": "string",
-          "host_group_name": "string",
+          "username": "admin",
+          "password": "admin",
+          "zeus_ip": "127.0.0.1",
+          "zeus_port": "11111",
+          "host_name": "host_name",
+          "host_group_name": "host_group_name",
           "management": true,
-          "agent_port": "12000"
+          "ceres_port": "12000"
         }
     Returns:
         str: status code
@@ -71,21 +71,21 @@ def register(register_info: dict) -> int:
     data['host_name'] = register_info.get('host_name')
     data['host_group_name'] = register_info.get('host_group_name')
     data['management'] = register_info.get('management') or False
-    data['username'] = register_info.get('web_username')
-    data['password'] = register_info.get('web_password')
+    data['username'] = register_info.get('username')
+    data['password'] = register_info.get('password')
     data['host_id'] = Collect.get_uuid()
     data['public_ip'] = Collect.get_host_ip()
-    data['agent_port'] = register_info.get('agent_port') or \
+    data['agent_port'] = register_info.get('ceres_port') or \
                           configuration.ceres.get('PORT')
     data["os_version"] = Collect.get_system_info()
 
-    manager_ip = register_info.get('manager_ip')
-    manager_port = register_info.get('manager_port')
-    url = f'http://{manager_ip}:{manager_port}/manage/host/add'
+    zeus_ip = register_info.get('zeus_ip')
+    zeus_port = register_info.get('zeus_port')
+    url = f'http://{zeus_ip}:{zeus_port}/manage/host/add'
     try:
         ret = requests.post(url, data=json.dumps(data),
                             headers={'content-type': 'application/json'}, timeout=5)
-    except requests.exceptions.ConnectionError as e:
+    except requests.exceptions.RequestException as e:
         LOGGER.error(e)
         return HTTP_CONNECT_ERROR
     ret_data = json.loads(ret.text)

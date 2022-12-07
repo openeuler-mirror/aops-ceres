@@ -1,0 +1,10 @@
+{
+  "username": "admin",
+  "password": "admin",
+  "zeus_ip": "127.0.0.1",
+  "zeus_port": "11111",
+  "host_name": "host_name",
+  "host_group_name": "host_group_name",
+  "management": true,
+  "ceres_port": "12000"
+}

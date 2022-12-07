@@ -40,7 +40,7 @@ def register_on_manager(args: argparse.Namespace) -> NoReturn:
         args(argparse.Namespace): args parser
 
     Returns:
-        dict: token or error message
+        NoReturn
     """
     if args.data:
         register_info = register_info_to_dict(args.data)
