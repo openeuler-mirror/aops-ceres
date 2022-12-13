@@ -25,7 +25,7 @@ from ceres.manages.collect_manage import Collect
 from ceres.manages.token_manage import TokenManage
 
 
-def register_info_to_dict(string: str) -> Dict:
+def register_info_to_dict(string: str) -> dict:
     """
     Convert JSON string to dictionary
     Args:
