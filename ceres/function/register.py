@@ -76,7 +76,7 @@ def register(register_info: dict) -> int:
     data['host_id'] = Collect.get_uuid()
     data['public_ip'] = Collect.get_host_ip()
     data['agent_port'] = register_info.get('ceres_port') or \
-                          configuration.ceres.get('PORT')
+                         configuration.ceres.get('PORT')
     data["os_version"] = Collect.get_system_info()
 
     zeus_ip = register_info.get('zeus_ip')
@@ -88,11 +88,15 @@ def register(register_info: dict) -> int:
     except requests.exceptions.RequestException as e:
         LOGGER.error(e)
         return HTTP_CONNECT_ERROR
+
+    if ret.status_code != SUCCESS:
+        LOGGER.warning(ret.text)
+        return ret.status_code
+
     ret_data = json.loads(ret.text)
     if ret_data.get('code') == SUCCESS:
         TokenManage.set_value(ret_data.get('token'))
-        save_data_to_file(json.dumps({"access_token": ret_data.get('token')}),
-                          DEFAULT_TOKEN_PATH)
+        save_data_to_file(json.dumps({"access_token": ret_data.get('token')}), DEFAULT_TOKEN_PATH)
         return SUCCESS
     LOGGER.error(ret_data)
     return int(ret_data.get('code'))
