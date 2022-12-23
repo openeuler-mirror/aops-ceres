@@ -146,7 +146,7 @@ def plugin_status_judge(plugin_name: str) -> str:
     return res
 
 
-def get_dict_from_file(file_path: str) -> Dict:
+def get_dict_from_file(file_path: str) -> dict:
     """
         Get json data from file and return related dict
     Args:

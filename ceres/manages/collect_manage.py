@@ -293,7 +293,7 @@ class Collect:
         return res
 
     @staticmethod
-    def _get_disk_info() -> List[Dict]:
+    def _get_disk_info() -> List[dict]:
         """
             get disk capacity and model
 

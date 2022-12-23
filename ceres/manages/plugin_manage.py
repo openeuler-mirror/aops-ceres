@@ -112,7 +112,7 @@ class Plugin:
                 installed_plugin.remove(plugin_name)
         return installed_plugin
 
-    def get_plugin_status(self):
+    def get_plugin_status(self) -> str:
         """
         Get plugin running status which is installed
 
@@ -132,7 +132,7 @@ class Plugin:
         return status
 
     @classmethod
-    def get_pid(cls, rpm_name):
+    def get_pid(cls, rpm_name) -> str:
         """
         Get main process id when plugin is running
 
