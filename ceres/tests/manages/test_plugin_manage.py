@@ -190,6 +190,19 @@ class TestPluginManage(unittest.TestCase):
         res = GalaGopher().change_items_status(mock_input)
         self.assertEqual([], res.get("failure"))
 
+    @mock.patch("ceres.manages.plugin_manage.load_gopher_config")
+    def test_change_items_status_should_return_all_probes_change_failed_when_gopher_config_is_null(
+            self, mock_gopher_config):
+        mock_input = {
+            "mock_probe1": "on",
+            "mock_probe2": "off",
+            "mock_probe3": "auto"
+        }
+        mock_gopher_config.return_value = AttrDict()
+
+        res = GalaGopher().change_items_status(mock_input)
+        self.assertEqual(['mock_probe1', 'mock_probe2', 'mock_probe3'] , res.get("failure"))
+
     @mock.patch('builtins.open', mock.mock_open())
     @mock.patch.object(GalaGopher, "_GalaGopher__change_probe_status")
     @mock.patch("ceres.manages.plugin_manage.load_gopher_config")
@@ -313,6 +326,14 @@ class TestPluginManage(unittest.TestCase):
         mock_shell.side_effect = InputError('')
         res = Plugin('').get_plugin_status()
         self.assertEqual('', res)
+
+    @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
+    def test_get_collect_items_should_return_empty_set_when_gopher_config_is_empty(
+            self, mock_gopher_config):
+
+        mock_gopher_config.return_value = AttrDict()
+        res = GalaGopher.get_collect_items()
+        self.assertEqual(set(), res)
 
     @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
     def test_get_collect_items_should_return_collect_items_when_load_gopher_config_succeed(

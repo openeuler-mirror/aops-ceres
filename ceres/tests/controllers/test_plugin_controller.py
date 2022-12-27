@@ -13,7 +13,7 @@
 import json
 from unittest import mock
 
-from ceres.function.status import SUCCESS, SERVICE_NOT_EXIST, TOKEN_ERROR, PARAM_ERROR
+from ceres.function.status import SERVER_ERROR, SUCCESS, SERVICE_NOT_EXIST, TOKEN_ERROR, PARAM_ERROR
 from ceres.tests import BaseTestCase
 from ceres.manages.token_manage import TokenManage
 from ceres.manages.plugin_manage import Plugin, GalaGopher
@@ -88,6 +88,13 @@ class TestPluginController(BaseTestCase):
         response = self.client.get('/v1/ceres/plugin/start?plugin_name=gala-gopher')
         self.assert405(response, response.json)
 
+    @mock.patch('ceres.controllers.plugin_controller.INSTALLABLE_PLUGIN', ['mock_plugin'])
+    @mock.patch('ceres.controllers.plugin_controller.INFORMATION_ABOUT_RPM_SERVICE', {})
+    def test_start_plugin_should_return_server_error_when_input_plugin_not_in_rpm_info(self):
+        response = self.client.post('/v1/ceres/plugin/start?plugin_name=mock_plugin',
+                                    headers=header_with_token)
+        self.assertEqual(SERVER_ERROR, response.json.get("code"))
+
     @mock.patch.object(Plugin, 'stop_service')
     def test_stop_plugin_should_return_200_when_input_installed_plugin_name_with_correct_token(
             self, mock_stop_service):
@@ -136,6 +143,13 @@ class TestPluginController(BaseTestCase):
     def test_stop_plugin_should_return_405_when_request_by_other_method(self):
         response = self.client.get('/v1/ceres/plugin/stop?plugin_name=gala-gopher')
         self.assert405(response, response.json)
+
+    @mock.patch('ceres.controllers.plugin_controller.INSTALLABLE_PLUGIN', ['mock_plugin'])
+    @mock.patch('ceres.controllers.plugin_controller.INFORMATION_ABOUT_RPM_SERVICE', {})
+    def test_stop_plugin_should_return_server_error_when_input_plugin_not_in_rpm_info(self):
+        response = self.client.post('/v1/ceres/plugin/stop?plugin_name=mock_plugin',
+                                    headers=header_with_token)
+        self.assertEqual(SERVER_ERROR, response.json.get("code"))
 
     @mock.patch('ceres.controllers.plugin_controller.plugin_status_judge')
     @mock.patch.object(GalaGopher, 'change_items_status')

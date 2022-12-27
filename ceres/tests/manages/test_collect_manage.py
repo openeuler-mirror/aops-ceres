@@ -11,6 +11,7 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import grp
+import json
 import os
 import pwd
 import unittest
@@ -37,9 +38,10 @@ class TestCollectManage(unittest.TestCase):
     def setUp(self) -> None:
         warnings.simplefilter('ignore', ResourceWarning)
 
+    @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_info_should_return_memory_info_when_get_shell_data_is_correct(self,
-                                                                                      mock_shell_data):
+    def test_get_memory_info_should_return_memory_info_when_get_shell_data_is_correct(
+            self, mock_shell_data, mock_memory_size):
         mock_shell_data.return_value = """
             Memory Device
                     Array Handle: 0x0006
@@ -69,8 +71,10 @@ class TestCollectManage(unittest.TestCase):
                     Speed: 2000 MT/s
                     Manufacturer: Test2
             """
+        mock_memory_size.return_value = '48G'
         expect_res = {
             'total': 2,
+            'size': "48G",
             'info': [
                 {'size': '16 GB',
                  'type': 'DDR4',
@@ -88,9 +92,10 @@ class TestCollectManage(unittest.TestCase):
         res = Collect()._get_memory_info()
         self.assertEqual(expect_res, res)
 
+    @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_info_should_return_empty_list_when_memory_info_is_not_showed(self,
-                                                                                     mock_shell_data):
+    def test_get_memory_info_should_return_empty_list_when_memory_info_is_not_showed(
+            self, mock_shell_data, mock_memory_size):
         mock_shell_data.return_value = """
                     Memory Device
                     Array Handle: 0x0006
@@ -106,27 +111,32 @@ class TestCollectManage(unittest.TestCase):
                     Type Detail: Unknown Synchronous
                     Speed: Unknown
         """
-        expect_res = {'info': [], 'total': 0}
+        mock_memory_size.return_value = '4G'
+        expect_res = {'info': [], 'total': 0, "size": "4G"}
 
         res = Collect()._get_memory_info()
         self.assertEqual(expect_res, res)
 
+    @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_info_should_return_empty_dict_when_get_shell_data_is_incorrect_data(self,
-                                                                                            mock_shell_data):
+    def test_get_memory_info_should_return_empty_dict_when_get_shell_data_is_incorrect_data(
+            self, mock_shell_data, mock_memory_size):
         """
             This situation exists in the virtual machine
         """
         mock_shell_data.return_value = """
                 test text 
         """
+        mock_memory_size.return_value = ''
         res = Collect()._get_memory_info()
         self.assertEqual({}, res)
 
+    @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_info_should_return_empty_dict_when_get_shell_data_error(self,
-                                                                                mock_shell_data):
+    def test_get_memory_info_should_return_empty_dict_when_get_shell_data_error(
+            self, mock_shell_data, mock_memory_size):
         mock_shell_data.side_effect = InputError('')
+        mock_memory_size.return_value = ''
         res = Collect()._get_memory_info()
         self.assertEqual({}, res)
 
@@ -400,3 +410,56 @@ class TestCollectManage(unittest.TestCase):
             self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         self.assertEqual([], Collect.get_installed_packages())
+
+    @mock.patch.object(Collect, "_Collect__get_kernel_version")
+    @mock.patch.object(Collect, "_Collect__get_bios_version")
+    @mock.patch.object(Collect, "get_system_info")
+    def test_get_os_info_should_return_os_info_when_execute_command_failed(
+            self, mock_system_info, mock_bios_version, mock_kernel_version):
+        mock_system_info.return_value = "mock_os_version"
+        mock_bios_version.return_value = "mock_bios_version"
+        mock_kernel_version.return_value = "mock_kernel_version"
+        expected_result = {
+            "os_version": "mock_os_version",
+            "bios_version": "mock_bios_version",
+            "kernel": "mock_kernel_version"
+        }
+        self.assertEqual(expected_result, Collect()._get_os_info())
+
+    @mock.patch.object(Collect, "_get_os_info")
+    @mock.patch.object(Collect, "_get_disk_info")
+    def test_get_host_info_should_return_host_info_when_input_info_type_is_correct(
+            self, mock_disk_info, mock_os_info):
+        os_info = {
+            "os_version": "mock_os_version",
+            "bios_version": "mock_bios_version",
+            "kernel": "mock_kernel_version"
+        }
+        disk_info = [
+            {
+                "capacity": "40GB",
+                "model": "MOCK HARDDISK"
+            }
+        ]
+        mock_os_info.return_value = os_info
+        mock_disk_info.return_value = disk_info
+        expected_result = {"resp": {"disk": disk_info, "os": os_info}}
+        self.assertEqual(expected_result, Collect().get_host_info(['os', 'disk']))
+
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed(self, mock_shell):
+        mock_shell.return_value = '{"product": "MOCK PRODUCT", "size": 42949672960}'
+        self.assertEqual([{"model": "MOCK PRODUCT", "capacity": "42GB"}], Collect()._get_disk_info())
+
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_fail(self, mock_shell):
+        mock_shell.side_effect = InputError('')
+        self.assertEqual([], Collect()._get_disk_info())
+
+    @mock.patch.object(json, "loads")
+    @mock.patch('ceres.manages.collect_manage.get_shell_data')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_but_decode_error(
+            self, mock_shell, mock_json_loads):
+        mock_shell.return_value = '{"product": "MOCK PRODUCT", "size": 42949672960}'
+        mock_json_loads.side_effect = json.decoder.JSONDecodeError('', '', int())
+        self.assertEqual([], Collect()._get_disk_info())

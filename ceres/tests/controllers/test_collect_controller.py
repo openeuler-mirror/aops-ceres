@@ -36,9 +36,35 @@ class TestCeresController(BaseTestCase):
 
     @mock.patch.object(Collect, 'get_host_info')
     def test_get_host_info_should_return_os_info_when_input_all_is_correct(self, mock_host_info):
-        """
-            correct request method with correct token
-        """
+        mock_host_info.return_value = {
+            "resp": {
+                "cpu": {},
+                "disk": {},
+                "os": {},
+                "memory": {}
+            }
+        }
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_token, data=json.dumps(["cpu", "disk", "os", "memory"]))
+        expect_info_type = HOST_COLLECT_INFO_SUPPORT
+        self.assertEqual(expect_info_type, list(response.json.get('resp').keys()))
+
+    @mock.patch.object(Collect, 'get_host_info')
+    def test_get_host_info_should_return_corresponding_os_info_when_input_partial_info_type(self, mock_host_info):
+        mock_host_info.return_value = {
+            "resp": {
+                "cpu": {},
+                "os": {},
+                "memory": {}
+            }
+        }
+        url = "v1/ceres/host/info"
+        response = self.client.post(url, headers=self.headers_with_token, data=json.dumps(["cpu", "memory", "os"]))
+        expect_info_type = ['cpu', 'os', 'memory']
+        self.assertEqual(expect_info_type, list(response.json.get('resp').keys()))
+
+    @mock.patch.object(Collect, 'get_host_info')
+    def test_get_host_info_should_return_all_os_info_when_input_info_type_is_empty_list(self, mock_host_info):
         mock_host_info.return_value = {
             "resp": {
                 "cpu": {},
@@ -53,43 +79,28 @@ class TestCeresController(BaseTestCase):
         self.assertEqual(expect_info_type, list(response.json.get('resp').keys()))
 
     def test_get_host_info_should_return_400_when_with_no_token(self):
-        """
-            correct request method with no token
-        """
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers, data=json.dumps([]))
         self.assert400(response, response.json)
 
     def test_get_host_info_should_return_param_error_when_input_info_type_is_error(self):
-        """
-            correct request method with no token
-        """
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers, data=json.dumps(['mock']))
         self.assert400(response, response.json)
 
     def test_get_host_info_should_return_token_error_when_input_incorrect_token(self):
-        """
-            correct request method with incorrect token
-        """
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers_with_incorrect_token,
                                     data=json.dumps([]))
         self.assertEqual(TOKEN_ERROR, response.json.get('code'), response.json)
 
     def test_get_host_info_should_return_param_error_when_input_info_type_is_not_support(self):
-        """
-            correct request method with incorrect token
-        """
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers_with_token,
                                     data=json.dumps(['system']))
         self.assertEqual(PARAM_ERROR, response.json.get('code'), response.json)
 
     def test_get_host_info_should_return_param_error_when_no_input(self):
-        """
-            correct request method with incorrect token
-        """
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers_with_token)
         self.assert400(response)
@@ -112,9 +123,6 @@ class TestCeresController(BaseTestCase):
 
     def test_change_collect_items_should_return_change_success_and_failure_when_input_unsupported_items(
             self):
-        """
-           some probe is incorrect
-        """
         url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
@@ -140,12 +148,6 @@ class TestCeresController(BaseTestCase):
 
     def test_change_collect_items_should_return_all_result_when_input_installed_plugin_and_unsupported_plugin(
             self):
-        """
-            Returns:
-                unsupported plugin: not support,
-                installed plugin: failure list and success list
-
-        """
         url = "http://localhost:12000/v1/ceres/collect/items/change"
         data = {
             "gopher": {
@@ -200,6 +202,14 @@ class TestCeresController(BaseTestCase):
         response = self.client.post('/v1/ceres/application/info')
         self.assert405(response, response.json)
 
+    @mock.patch("ceres.controllers.collect_controller.validate_data")
+    def test_collect_file_should_return_param_error_when_input_file_list_is_not_str(self, validate_data):
+        validate_data.return_value = False
+        response = self.client.post('/v1/ceres/file/collect',
+                                    data=json.dumps([]),
+                                    headers=self.headers_with_token)
+        self.assertEqual(PARAM_ERROR, response.json.get("code"))
+
     @mock.patch.object(os.path, 'exists')
     @mock.patch.object(os.path, 'isfile')
     @mock.patch.object(Collect, 'get_file_info')
@@ -243,6 +253,30 @@ class TestCeresController(BaseTestCase):
                                        },
                                        "content": "content"
                                        }
+        response = self.client.post('/v1/ceres/file/collect',
+                                    data=json.dumps(data),
+                                    headers=self.headers_with_token)
+        self.assertEqual(response.json.get('fail_files'), ['test2'], response.json)
+
+    @mock.patch.object(Collect, 'get_file_info')
+    @mock.patch.object(os.path, 'exists')
+    @mock.patch.object(os.path, 'isfile')
+    def test_collect_file_should_return_fail_list_when_input_partial_file_path_is_not_exist(self,
+                                                                                    mock_isfile,
+                                                                                    mock_exists,
+                                                                                    mock_file_info
+                                                                                    ):
+        mock_isfile.side_effect = [True, True]
+        mock_exists.side_effect = [True, True]
+        data = ['test1', 'test2']
+        mock_file_info.side_effect = [{"path": "file_path",
+                                       "file_attr": {
+                                           "mode": "0755",
+                                           "owner": "owner",
+                                           "group": "group"
+                                       },
+                                       "content": "content"
+                                       }, {}]
         response = self.client.post('/v1/ceres/file/collect',
                                     data=json.dumps(data),
                                     headers=self.headers_with_token)
