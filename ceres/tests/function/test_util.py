@@ -16,11 +16,32 @@ import os
 import unittest
 from unittest import mock
 
-from ceres.function.util import plugin_status_judge, get_dict_from_file, update_ini_data_value
+import libconf
+
+from ceres.function.util import (
+    load_gopher_config,
+    plugin_status_judge,
+    get_dict_from_file,
+    update_ini_data_value
+)
 from ceres.models.custom_exception import InputError
 
 
 class TestUtil(unittest.TestCase):
+    MOCK_GOPHER_CONFIG ='''
+        mock_key =
+    (
+    {
+        name = "mock_value1";
+        switch = "off";
+        interval = 1;
+    },
+    {
+        name = "mock_value2";
+        switch = "off";
+        interval = 1;
+    },
+    );'''
     @mock.patch.object(mock.Mock, 'stdout', create=True)
     @mock.patch('ceres.function.util.get_shell_data')
     @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE',
@@ -123,3 +144,21 @@ class TestUtil(unittest.TestCase):
 
         update_ini_data_value('file_path', 'section', 'option', 'mock_value')
         self.assertEqual('mock_value', mock_parser.get('section', 'option'))
+
+    @mock.patch("builtins.open", mock.mock_open(read_data=MOCK_GOPHER_CONFIG))
+    def test_load_gopher_config_should_return_gopher_config_when_load_succeed(self):
+        mock_config = load_gopher_config('mock')
+        self.assertTrue("mock_key" in mock_config.keys())
+
+    @mock.patch("builtins.open")
+    def test_load_gopher_config_should_return_empty_config_object_when_file_is_not_found(self, mock_open):
+        mock_open.side_effect = FileNotFoundError()
+        mock_config = load_gopher_config('mock')
+        self.assertEqual(libconf.AttrDict(), mock_config)
+
+    @mock.patch("ceres.function.util.load")
+    @mock.patch("builtins.open", mock.mock_open(read_data=MOCK_GOPHER_CONFIG))
+    def test_load_gopher_config_should_return_empty_config_object_when_file_is_exist_but_load_fail(self, mock_load):
+        mock_load.side_effect = libconf.ConfigParseError()
+        mock_config = load_gopher_config('mock')
+        self.assertEqual(libconf.AttrDict(), mock_config)
