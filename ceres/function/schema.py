@@ -30,23 +30,26 @@ CHANGE_COLLECT_ITEMS_SCHEMA = {
 REGISTER_SCHEMA = {
     "type": "object",
     "required": [
+        "zeus_ip",
+        "zeus_port",
+        "access_token",
         "host_name",
         "host_group_name",
-        "username",
-        "password",
         "management",
-        "zeus_ip",
-        "zeus_port"
+        "ssh_user",
+        "password",
+        "ssh_port"
     ],
     "properties": {
         "host_name": {"type": "string", "minLength": 1},
         "host_group_name": {"type": "string", "minLength": 1},
-        "username": {"type": "string", "minLength": 1},
+        "ssh_user": {"type": "string", "minLength": 1},
         "password": {"type": "string", "minLength": 1},
         "management": {"enum": [True, False]},
         "zeus_ip": {"type": "string", "minLength": 8},
-        "zeus_port": {"type": "string", "minLength": 2},
-        "ceres_port": {"type": "string", "minLength": 1}
+        "zeus_port": {"type": "integer", "minimum": 1},
+        "ssh_port": {"type": "integer", "minimum": 1},
+        "access_token": {"type": "string", "minLength": 1}
     }
 }
 

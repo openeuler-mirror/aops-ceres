@@ -15,14 +15,11 @@ from typing import Dict
 
 import requests
 
-from ceres.conf import configuration
-from ceres.conf.constant import DEFAULT_TOKEN_PATH
 from ceres.function.log import LOGGER
 from ceres.function.schema import REGISTER_SCHEMA
 from ceres.function.status import HTTP_CONNECT_ERROR, SUCCESS, PARAM_ERROR
-from ceres.function.util import save_data_to_file, validate_data
+from ceres.function.util import validate_data
 from ceres.manages.collect_manage import Collect
-from ceres.manages.token_manage import TokenManage
 
 
 def register_info_to_dict(string: str) -> dict:
@@ -51,40 +48,31 @@ def register(register_info: dict) -> int:
     Args:
         register_info(dict): It contains the necessary information to register an account
         for example:
-        {
-          "username": "admin",
-          "password": "admin",
-          "zeus_ip": "127.0.0.1",
-          "zeus_port": "11111",
-          "host_name": "host_name",
-          "host_group_name": "host_group_name",
-          "management": true,
-          "ceres_port": "12000"
-        }
+            {
+              "ssh_user": "root",
+              "password": "password",
+              "zeus_ip": "127.0.0.1",
+              "zeus_port": 11111,
+              "host_name": "host_name",
+              "host_group_name": "aops",
+              "management": true,
+              "ssh_port":22,
+              "access_token": "token-string"
+            }
+
     Returns:
         str: status code
     """
     if not validate_data(register_info, REGISTER_SCHEMA):
         return PARAM_ERROR
 
-    data = {}
-    data['host_name'] = register_info.get('host_name')
-    data['host_group_name'] = register_info.get('host_group_name')
-    data['management'] = register_info.get('management') or False
-    data['username'] = register_info.get('username')
-    data['password'] = register_info.get('password')
-    data['host_id'] = Collect.get_uuid()
-    data['public_ip'] = Collect.get_host_ip()
-    data['agent_port'] = register_info.get('ceres_port') or \
-                         configuration.ceres.get('PORT')
-    data["os_version"] = Collect.get_system_info()
-
-    zeus_ip = register_info.get('zeus_ip')
-    zeus_port = register_info.get('zeus_port')
-    url = f'http://{zeus_ip}:{zeus_port}/manage/host/add'
+    headers = {'content-type': 'application/json',
+               "access_token": register_info.pop('access_token')}
+    register_info['host_ip'] = Collect.get_host_ip()
+    url = f'http://{register_info.pop("zeus_ip")}:{register_info.pop("zeus_port")}/manage/host/add'
     try:
-        ret = requests.post(url, data=json.dumps(data),
-                            headers={'content-type': 'application/json'}, timeout=5)
+        ret = requests.post(url, data=json.dumps(register_info),
+                            headers=headers, timeout=5)
     except requests.exceptions.RequestException as e:
         LOGGER.error(e)
         return HTTP_CONNECT_ERROR
@@ -95,8 +83,6 @@ def register(register_info: dict) -> int:
 
     ret_data = json.loads(ret.text)
     if ret_data.get('code') == SUCCESS:
-        TokenManage.set_value(ret_data.get('token'))
-        save_data_to_file(json.dumps({"access_token": ret_data.get('token')}), DEFAULT_TOKEN_PATH)
         return SUCCESS
     LOGGER.error(ret_data)
     return int(ret_data.get('code'))
