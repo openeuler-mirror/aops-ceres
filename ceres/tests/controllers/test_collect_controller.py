@@ -60,7 +60,7 @@ class TestCeresController(BaseTestCase):
         }
         url = "v1/ceres/host/info"
         response = self.client.post(url, headers=self.headers_with_token, data=json.dumps(["cpu", "memory", "os"]))
-        expect_info_type = ['cpu', 'os', 'memory']
+        expect_info_type = ['cpu', 'memory', "os"]
         self.assertEqual(expect_info_type, list(response.json.get('resp').keys()))
 
     @mock.patch.object(Collect, 'get_host_info')

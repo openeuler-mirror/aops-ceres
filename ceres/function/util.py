@@ -58,8 +58,8 @@ def validate_data(data: Any, schema: dict) -> bool:
     try:
         validate(instance=data, schema=schema)
         return True
-    except ValidationError:
-        LOGGER.error(f"The input data does not match the target type.")
+    except ValidationError as e:
+        LOGGER.error(e.message)
         return False
 
 
@@ -205,3 +205,21 @@ def update_ini_data_value(file_path: str, section: str, option: str, value) -> N
     cf[section] = {option: value}
     with open(file_path, 'w') as f:
         cf.write(f)
+
+
+def convert_string_to_json(string: str) -> Any:
+    """
+    convert json string to python object
+
+    Args:
+        string: json string
+
+    Returns:
+        list object or dict object
+    """
+    try:
+        res = json.loads(string)
+        return res
+    except json.decoder.JSONDecodeError as error:
+        LOGGER.error(error)
+        return PARAM_ERROR
