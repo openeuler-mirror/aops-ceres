@@ -10,19 +10,18 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-SUCCESS = 200
-FILE_CORRUPTED = 202
-PARTIAL_SUCCEED = 206
-FILE_NOT_FOUND = 410
-PARAM_ERROR = 1000
-CONFLICT_ERROR = 409
-SERVER_ERROR = 500
-HTTP_CONNECT_ERROR = 1001
-UNKNOWN_ERROR = 1002
-SERVICE_NOT_EXIST = 1003
-TOKEN_ERROR = 1201
-REPO_CONTENT_INCORRECT = 1010
-REPO_NOT_SET = 1011
+SUCCESS = "Succeed"
+FILE_CORRUPTED = "File.Structure.Corrupted"
+PARTIAL_SUCCEED = "Partial.Succeed"
+FILE_NOT_FOUND = "File.Not.Found"
+PARAM_ERROR = "Param.Error"
+SERVER_ERROR = "Server.Error"
+HTTP_CONNECT_ERROR = "Http.Connect.Error"
+UNKNOWN_ERROR = "Unknown.Error"
+SERVICE_NOT_EXIST = "Service.Not.Exist"
+TOKEN_ERROR = "Token.Error"
+REPO_CONTENT_INCORRECT = "Repo.Content.Incorrect"
+REPO_NOT_SET = "Repo.Not.Set"
 
 
 class StatusCode:

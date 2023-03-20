@@ -15,7 +15,8 @@ STRING_ARRAY = {
     "items": {
         "type": "string",
         "minLength": 1
-    }
+    },
+    "minItems": 1
 }
 
 CHANGE_COLLECT_ITEMS_SCHEMA = {
@@ -122,5 +123,12 @@ CVE_FIX_SCHEMA = {
             },
             "minItems": 1
         }
+    }
+}
+
+HOST_INFO_SCHEMA = {
+    "type": "array",
+    "items": {
+        "enum": ["os", "cpu", "memory"]
     }
 }

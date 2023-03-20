@@ -443,7 +443,7 @@ class TestCollectManage(unittest.TestCase):
         ]
         mock_os_info.return_value = os_info
         mock_disk_info.return_value = disk_info
-        expected_result = {"resp": {"disk": disk_info, "os": os_info}}
+        expected_result = {"disk": disk_info, "os": os_info}
         self.assertEqual(expected_result, Collect().get_host_info(['os', 'disk']))
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')

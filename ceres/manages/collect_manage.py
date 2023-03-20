@@ -10,17 +10,26 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-import re
+import grp
 import json
 import os
-import grp
 import pwd
-from socket import socket, AF_INET, SOCK_DGRAM
-from typing import Any, Dict, Union, List
+import re
+from socket import AF_INET, SOCK_DGRAM, socket
+from typing import Any, Dict, List, Union
 
-from ceres.models.custom_exception import InputError
+from ceres.conf.constant import (
+    HOST_COLLECT_INFO_SUPPORT,
+    INFORMATION_ABOUT_RPM_SERVICE,
+    INSTALLABLE_PLUGIN,
+    PLUGIN_WITH_CLASS,
+    SCANNED_APPLICATION
+)
 from ceres.function.log import LOGGER
-from ceres.function.util import get_shell_data
+from ceres.function.util import get_shell_data, plugin_status_judge
+from ceres.manages import plugin_manage
+from ceres.manages.resource_manage import Resource
+from ceres.models.custom_exception import InputError
 
 
 class Collect:
@@ -78,11 +87,12 @@ class Collect:
                         }
                 }
         """
-        host_info = {"resp": {}}
-
+        host_info = {}
+        if not info_type:
+            info_type = HOST_COLLECT_INFO_SUPPORT
         for info_name in info_type:
             func_name = getattr(self, f"_get_{info_name}_info")
-            host_info["resp"][info_name] = func_name()
+            host_info[info_name] = func_name()
 
         return host_info
 
@@ -434,3 +444,126 @@ class Collect:
         for package_source_name in pkg_src_name.splitlines():
             package_list.add(package_source_name.rsplit("-", 2)[0].split(':')[1].strip())
         return list(package_list)
+
+    @staticmethod
+    def get_application_info() -> list:
+        """
+            get the running applications in the target list
+
+        Returns:
+            List[str]:applications which is running
+        """
+        running_apps = []
+        for application_name in SCANNED_APPLICATION:
+            status_info = plugin_status_judge(application_name)
+            if status_info != '':
+                status = re.search(r':.+\(', status_info).group()[1:-1].strip()
+                if status == 'active':
+                    running_apps.append(application_name)
+        return running_apps
+
+    @staticmethod
+    def get_plugin_info():
+        """
+        get all plugin info about ceres
+
+        Returns:
+            a list which contains cpu,memory,collect items of plugin,running status and so on.
+            for example
+                [{
+                    "plugin_name": "string",
+                    "is_installed": true,
+                    "status": "string",
+                    "collect_items": [{
+                        "probe_name": "string",
+                        "probe_status": "string"
+                    }],
+                    "resource": [{
+                        "name": "string",
+                        "limit_value": "string",
+                        "current_value": "string
+                    }]
+                }]
+
+        """
+        plugin_list = INSTALLABLE_PLUGIN
+        if len(plugin_list) == 0:
+            return []
+
+        res = []
+        for plugin_name in plugin_list:
+            plugin_running_info = {
+                "plugin_name": plugin_name,
+                "collect_items": [],
+                "status": None,
+                "resource": []
+            }
+
+            if not plugin_status_judge(plugin_name):
+                plugin_running_info["is_installed"] = False
+                res.append(plugin_running_info)
+                continue
+            plugin_running_info["is_installed"] = True
+
+            service_name = INFORMATION_ABOUT_RPM_SERVICE.get(plugin_name).get("service_name")
+            plugin = plugin_manage.Plugin(service_name)
+
+            status = plugin.get_plugin_status()
+            if status == "active":
+                pid = plugin_manage.Plugin.get_pid(service_name)
+                cpu_current = Resource.get_current_cpu(service_name, pid)
+                memory_current = Resource.get_current_memory(pid)
+            else:
+                cpu_current = None
+                memory_current = None
+            cpu_limit = Resource.get_cpu_limit(service_name)
+            memory_limit = Resource.get_memory_limit(service_name)
+
+            collect_items_status = []
+            plugin_class_name = PLUGIN_WITH_CLASS.get(plugin_name, '')
+            if hasattr(plugin_manage, plugin_class_name):
+                plugin_obj = getattr(plugin_manage, plugin_class_name)
+                if hasattr(plugin_obj, "get_collect_status"):
+                    collect_items_status = plugin_obj.get_collect_status()
+
+            resource = []
+            cpu = {
+                "name": "cpu",
+                "current_value": cpu_current,
+                "limit_value": cpu_limit
+            }
+            memory = {
+                "name": "memory",
+                "current_value": memory_current,
+                "limit_value": memory_limit
+            }
+            resource.append(cpu)
+            resource.append(memory)
+            plugin_running_info["status"] = status
+            plugin_running_info["collect_items"] = collect_items_status
+            plugin_running_info["resource"] = resource
+            res.append(plugin_running_info)
+        return res
+
+    @staticmethod
+    def collect_file(config_path_list: list) -> dict:
+        result = {
+            "success_files": [],
+            "fail_files": [],
+            "infos": [
+            ]
+        }
+
+        for file_path in config_path_list:
+            if not os.path.exists(file_path) or not os.path.isfile(file_path):
+                result['fail_files'].append(file_path)
+                LOGGER.error(f"file {file_path} cannot be found or is not a file")
+                continue
+
+            info = Collect.get_file_info(file_path)
+            if not info:
+                result['fail_files'].append(file_path)
+                continue
+            result['success_files'].append(file_path)
+            result['infos'].append(info)
+        return result
