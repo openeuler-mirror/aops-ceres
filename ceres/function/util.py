@@ -21,7 +21,7 @@ from jsonschema import validate, ValidationError
 
 from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE
 from ceres.function.log import LOGGER
-from ceres.models.custom_exception import InputError
+from ceres.models.custom_exception import InputError, NoCommandError
 from ceres.function.schema import STRING_ARRAY
 
 from function.status import PARAM_ERROR
@@ -87,8 +87,8 @@ def get_shell_data(command_list: List[str], key: bool = True, env=None,
         raise InputError('please check your command')
     try:
         res = Popen(command_list, stdout=PIPE, stdin=stdin, stderr=STDOUT, env=env)
-        if "No such command" in res.stdout.read().decode():
-                raise InputError('No such command: hotpatch')
+        if "No such command: hotpatch" in res.stdout.read().decode():
+                raise NoCommandError('No such command: hotpatch')
     except FileNotFoundError as e:
         raise InputError('linux has no command') from e
 
