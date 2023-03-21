@@ -123,38 +123,32 @@ def collect_command_manage(args):
     if args.host:
         data = convert_string_to_json(args.host)
         if not validate_data(data, HOST_INFO_SCHEMA):
-            print(PARAM_ERROR, {})
-            return
+            exit(1)
         print(json.dumps(Collect().get_host_info(data)))
     elif args.application:
         print(json.dumps(Collect.get_application_info()))
     elif args.file:
         data = convert_string_to_json(args.file)
-        # print("data: " + data)
         if not validate_data(data, STRING_ARRAY):
-            print(PARAM_ERROR, {})
-            return
+            exit(1)
         print(json.dumps(Collect.collect_file(data)))
-
-    else:
-        print("invalid arguments")
 
 
 def plugin_command_manage(args):
     if args.start:
         if args.start not in INSTALLABLE_PLUGIN:
             LOGGER.error("unsupported plugin, please check and try again")
-            return
-        print(plugin_manage.Plugin(args.start_plugin).start_service())
+            exit(1)
+        print(plugin_manage.Plugin(args.start).start_service())
     elif args.stop:
         if args.stop not in INSTALLABLE_PLUGIN:
             LOGGER.error("unsupported plugin, please check and try again")
-            return
-        print(plugin_manage.Plugin(args.stop_plugin).stop_service())
+            exit(1)
+        print(plugin_manage.Plugin(args.stop).stop_service())
     elif args.change_collect_items:
         data = convert_string_to_json(args.change_collect_items)
         if not validate_data(data, CHANGE_COLLECT_ITEMS_SCHEMA):
-            print(PARAM_ERROR, {})
+            exit(1)
         print(json.dumps(change_collect_items(data)))
     elif args.info:
         print(json.dumps(Collect.get_plugin_info()))
@@ -164,15 +158,14 @@ def cve_command_manage(args):
     if args.set_repo:
         data = convert_string_to_json(args.set_repo)
         if not validate_data(data, REPO_SET_SCHEMA):
-            print(PARAM_ERROR, {})
+            exit(1)
 
         res = StatusCode.make_response_body(VulnerabilityManage().repo_set(data))
         print(json.dumps(res))
     elif args.scan:
         data = convert_string_to_json(args.scan)
         if not validate_data(data, CVE_SCAN_SCHEMA):
-            print(PARAM_ERROR, {})
-            return
+            exit(1)
         status_code, cve_scan_info = VulnerabilityManage().cve_scan(data)
         result = {
             "cves": cve_scan_info,
@@ -183,8 +176,7 @@ def cve_command_manage(args):
     elif args.fix:
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):
-            print(PARAM_ERROR, {})
-            return
+            exit(1)
         status_code, cve_fix_result = VulnerabilityManage().cve_fix(data.get("cves"))
         res = StatusCode.make_response_body((status_code, {"result": cve_fix_result}))
         print(json.dumps(res))

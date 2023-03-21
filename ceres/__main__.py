@@ -23,7 +23,6 @@ from ceres.function.command import (
     plugin_command_manage,
     register_on_manager
 )
-from ceres.function.log import LOGGER
 
 
 def start(*args) -> NoReturn:
@@ -72,6 +71,7 @@ def main():
         args.function(args)
     except AttributeError:
         print('error: you can get help for -h')
+        exit(1)
 
 
 if __name__ == '__main__':
