@@ -395,15 +395,23 @@ class TestCollectManage(unittest.TestCase):
         mock_stdout.return_value = None
         mock_shell_data.stdout.return_value = ''
         mock_shell_data.side_effect = (mock.Mock(),
-                                       "Source RPM  : perl-Encode-Locale-1.05-12.oe1.src.rpm\n"
+                                       "Source RPM: perl-Encode-Locale-1.05-12.oe1.src.rpm\n"
                                        "Source RPM: glib-networking-2.58.0-7.oe1.src.rpm\n"
                                        "Source RPM: dnf-4.2.15-8.oe1.src.rpm")
-        expected_result = {
-            "dnf",
-            "glib-networking",
-            "perl-Encode-Locale"
-        }
-        self.assertEqual(expected_result, set(Collect.get_installed_packages()))
+        expected_result = [
+            {
+                "name": "perl-Encode-Locale",
+                "version": "1.05-12"
+            },
+            {
+                "name": "glib-networking",
+                "version": "2.58.0-7"
+            },
+            {
+                "name": "dnf",
+                "version": "4.2.15-8"
+            }]
+        self.assertEqual(expected_result, Collect.get_installed_packages())
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_installed_package_should_return_empty_list_when_execute_command_failed(

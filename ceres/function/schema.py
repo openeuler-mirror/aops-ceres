@@ -118,10 +118,14 @@ CVE_FIX_SCHEMA = {
         "cves": {
             "type": "array",
             "items": {
-                "type": "string",
-                "minLength": 1
-            },
-            "minItems": 1
+                "type": "object",
+                "required": ["cve_id", "hotpatch"],
+                "properties": {
+                    "cve_id": {"type": "string", "minLength": 1},
+                    "hotpatch": {"enum": [True, False]}
+                }
+
+            }
         }
     }
 }
