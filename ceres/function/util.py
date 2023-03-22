@@ -87,10 +87,12 @@ def get_shell_data(command_list: List[str], key: bool = True, env=None,
         raise InputError('please check your command')
     try:
         res = Popen(command_list, stdout=PIPE, stdin=stdin, stderr=STDOUT, env=env)
-        if "No such command: hotpatch" in res.stdout.read().decode():
-                raise NoCommandError('No such command: hotpatch')
     except FileNotFoundError as e:
         raise InputError('linux has no command') from e
+
+    res_content = res.stdout.read().decode()
+    if "No such command: hotpatch" in res_content:
+        raise NoCommandError("hotpatch")
 
     if key:
         return res.stdout.read().decode()
