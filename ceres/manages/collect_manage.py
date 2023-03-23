@@ -446,8 +446,10 @@ class Collect:
         package_info_dict = {}
         for package_source_name in pkg_src_name.splitlines():
             package_info = package_source_name.rsplit("-", 2)
+            if len(package_info) == 1:
+                continue
             package = package_info[0].split(':')[1].strip()
-            pkg_version =f"{package_info[1]}-{package_info[-1].split('.')[0]}"
+            pkg_version = f"{package_info[1]}-{package_info[-1].split('.')[0]}"
             key = package + pkg_version
             if key not in package_info_dict:
                 package_info_dict[key] = {
