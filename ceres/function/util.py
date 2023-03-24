@@ -21,10 +21,9 @@ from jsonschema import validate, ValidationError
 
 from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE
 from ceres.function.log import LOGGER
-from ceres.models.custom_exception import InputError, NoCommandError
+from ceres.models.custom_exception import InputError
 from ceres.function.schema import STRING_ARRAY
-
-from function.status import PARAM_ERROR
+from ceres.function.status import PARAM_ERROR
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:
@@ -89,10 +88,6 @@ def get_shell_data(command_list: List[str], key: bool = True, env=None,
         res = Popen(command_list, stdout=PIPE, stdin=stdin, stderr=STDOUT, env=env)
     except FileNotFoundError as e:
         raise InputError('linux has no command') from e
-
-    res_content = res.stdout.read().decode()
-    if "No such command: hotpatch" in res_content:
-        raise NoCommandError("hotpatch")
 
     if key:
         return res.stdout.read().decode()
