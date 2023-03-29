@@ -23,6 +23,7 @@ from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE
 from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
 from ceres.function.schema import STRING_ARRAY
+from ceres.function.status import PARAM_ERROR
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:

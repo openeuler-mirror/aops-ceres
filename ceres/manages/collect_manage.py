@@ -430,8 +430,11 @@ class Collect:
         query installed packages
 
         Returns:
-            list: e.g
-                [ pcakage-version-1,pcakage-version-2]
+            list: list of dict, each dict is package_name and package_version. e.g
+                [{
+                    "name": "kernel",
+                    "version": "4.19.90-2022.1.1"
+                }]
         """
         try:
             package_info = get_shell_data(['rpm', '-qai'], key=False)
@@ -440,10 +443,21 @@ class Collect:
             LOGGER.error("Failed to query installed packages.")
             return []
 
-        package_list = set()
+        package_info_dict = {}
         for package_source_name in pkg_src_name.splitlines():
-            package_list.add(package_source_name.rsplit("-", 2)[0].split(':')[1].strip())
-        return list(package_list)
+            package_info = package_source_name.rsplit("-", 2)
+            if len(package_info) == 1:
+                continue
+            package = package_info[0].split(':')[1].strip()
+            pkg_version = f"{package_info[1]}-{package_info[-1].split('.')[0]}"
+            key = package + pkg_version
+            if key not in package_info_dict:
+                package_info_dict[key] = {
+                    "name": package,
+                    "version": pkg_version
+                }
+
+        return list(package_info_dict.values())
 
     @staticmethod
     def get_application_info() -> list:
