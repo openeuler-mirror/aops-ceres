@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 NAME = "aops-ceres"
-VERSION = "2.0.0"
+VERSION = "1.2.0"
 
 INSTALL_REQUIRES = [
     "flask",
@@ -28,8 +28,7 @@ setup(
     packages=find_packages(),
     data_files=[
         ('/etc/aops', ['conf/ceres.conf']),
-        ('/opt/aops', ['conf/register_example.json']),
-        ('/usr/lib/systemd/system', ['aops-ceres.service']),
+        ('/opt/aops', ['conf/register_example.json'])
     ],
     package_data={'': ['swagger/swagger.yaml']},
     include_package_data=True,
