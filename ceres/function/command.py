@@ -172,7 +172,7 @@ def cve_command_manage(args):
             "os_version": Collect.get_system_info(),
             "installed_packages": Collect.get_installed_packages()
         }
-        print(json.dumps({"result": result, "code": status_code}))
+        print(json.dumps(StatusCode.make_response_body((status_code, {"result": result}))))
     elif args.fix:
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):
