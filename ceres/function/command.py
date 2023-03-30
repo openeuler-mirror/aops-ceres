@@ -25,7 +25,7 @@ from ceres.function.schema import (
     REPO_SET_SCHEMA,
     STRING_ARRAY
 )
-from ceres.function.status import PARAM_ERROR, SUCCESS, StatusCode
+from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import (
     convert_string_to_json,
     get_dict_from_file,
