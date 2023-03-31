@@ -25,7 +25,7 @@ from ceres.function.schema import (
     REPO_SET_SCHEMA,
     STRING_ARRAY
 )
-from ceres.function.status import PARAM_ERROR, SUCCESS, StatusCode
+from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import (
     convert_string_to_json,
     get_dict_from_file,
@@ -172,7 +172,7 @@ def cve_command_manage(args):
             "os_version": Collect.get_system_info(),
             "installed_packages": Collect.get_installed_packages()
         }
-        print(json.dumps({"result": result, "code": status_code}))
+        print(json.dumps(StatusCode.make_response_body((status_code, {"result": result}))))
     elif args.fix:
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):

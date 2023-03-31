@@ -8,8 +8,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 
 BuildRequires:  python3-setuptools
-Requires:   python3-requests python3-flask python3-connexion python3-configparser python3-jsonschema
-Requires:   python3-flask-testing python3-libconf python3-swagger-ui-bundle
+Requires:   python3-requests  python3-jsonschema python3-libconf
 Requires:   python3-concurrent-log-handler dmidecode
 Provides:   aops-ceres
 Conflicts:  aops-agent

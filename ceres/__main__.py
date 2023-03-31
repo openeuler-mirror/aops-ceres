@@ -11,25 +11,13 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import argparse
-from json import encoder
-from typing import NoReturn
 
-import connexion
-
-from ceres.conf import configuration
 from ceres.function.command import (
     collect_command_manage,
     cve_command_manage,
     plugin_command_manage,
     register_on_manager
 )
-
-
-def start(*args) -> NoReturn:
-    app = connexion.App(__name__, specification_dir='./swagger/')
-    app.app.json_encoder = encoder.JSONEncoder
-    app.add_api('swagger.yaml', arguments={'title': 'ceres'}, pythonic_params=True)
-    app.run(host=configuration.ceres.get("IP"), port=configuration.ceres.get('PORT'))
 
 
 def main():

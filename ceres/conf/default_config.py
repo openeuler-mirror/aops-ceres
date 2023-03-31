@@ -12,11 +12,6 @@
 # ******************************************************************************/
 import os
 
-ceres = {
-    "IP": "127.0.0.1",
-    "PORT": 12000
-}
-
 gopher = {
     "CONFIG_PATH": "/opt/gala-gopher/gala-gopher.conf"
 }
