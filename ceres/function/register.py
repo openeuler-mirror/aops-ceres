@@ -77,12 +77,10 @@ def register(register_info: dict) -> int:
         LOGGER.error(e)
         return HTTP_CONNECT_ERROR
 
-    if ret.status_code != SUCCESS:
+    if ret.status_code != requests.codes["ok"]:
         LOGGER.warning(ret.text)
         return ret.status_code
 
-    ret_data = json.loads(ret.text)
-    if ret_data.get('code') == SUCCESS:
-        return SUCCESS
-    LOGGER.error(ret_data)
-    return int(ret_data.get('code'))
+    if ret.json().get('label') != SUCCESS:
+        LOGGER.error(ret.text)
+    return ret.json().get('label')

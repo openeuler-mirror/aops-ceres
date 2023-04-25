@@ -159,12 +159,8 @@ def get_dict_from_file(file_path: str) -> dict:
     try:
         with open(file_path, "r") as f:
             data = json.load(f)
-    except FileNotFoundError:
-        LOGGER.error('file not found')
-        data = {}
-    except json.decoder.JSONDecodeError:
-        LOGGER.error('Json conversion error, the file content'
-                     ' structure is not json format.')
+    except (IOError, ValueError) as error:
+        LOGGER.error(error)
         data = {}
     if not isinstance(data, dict):
         data = {}
