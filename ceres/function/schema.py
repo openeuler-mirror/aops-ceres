@@ -133,6 +133,6 @@ CVE_FIX_SCHEMA = {
 HOST_INFO_SCHEMA = {
     "type": "array",
     "items": {
-        "enum": ["os", "cpu", "memory"]
+        "enum": ["os", "cpu", "memory", "disk"]
     }
 }

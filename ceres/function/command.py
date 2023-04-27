@@ -132,6 +132,9 @@ def collect_command_manage(args):
         if not validate_data(data, STRING_ARRAY):
             exit(1)
         print(json.dumps(Collect.collect_file(data)))
+    else:
+        print("Please check the input parameters!")
+        exit(1)
 
 
 def plugin_command_manage(args):
@@ -152,7 +155,9 @@ def plugin_command_manage(args):
         print(json.dumps(change_collect_items(data)))
     elif args.info:
         print(json.dumps(Collect.get_plugin_info()))
-
+    else:
+        print("Please check the input parameters!")
+        exit(1)
 
 def cve_command_manage(args):
     if args.set_repo:
@@ -180,3 +185,6 @@ def cve_command_manage(args):
         status_code, cve_fix_result = VulnerabilityManage().cve_fix(data.get("cves"))
         res = StatusCode.make_response_body((status_code, {"result": cve_fix_result}))
         print(json.dumps(res))
+    else:
+        print("Please check the input parameters!")
+        exit(1)
