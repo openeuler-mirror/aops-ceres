@@ -47,14 +47,12 @@ def register_on_manager(args: argparse.Namespace) -> NoReturn:
     Returns:
         NoReturn
     """
-    if args.data:
+    if args.data is not None:
         register_info = register_info_to_dict(args.data)
     else:
         register_info = get_dict_from_file(args.path)
-    if register_info.get('ceres_host') is not None:
-        update_ini_data_value(CERES_CONFIG_PATH,
-                              'ceres', 'port', register_info.get('ceres_host'))
-    if register(register_info) == SUCCESS:
+
+    if register_info and register(register_info) == SUCCESS:
         print('Register Success')
     else:
         print('Register Fail')
