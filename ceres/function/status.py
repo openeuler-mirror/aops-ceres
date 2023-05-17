@@ -22,7 +22,7 @@ SERVICE_NOT_EXIST = "Service.Not.Exist"
 TOKEN_ERROR = "Token.Error"
 REPO_CONTENT_INCORRECT = "Repo.Content.Incorrect"
 REPO_NOT_SET = "Repo.Not.Set"
-
+COMMANDS_ERROR = "Command.Error"
 
 class StatusCode:
     """
@@ -61,6 +61,9 @@ class StatusCode:
         },
         REPO_NOT_SET: {
             "msg": "repo source named aops-update is not set"
+        },
+        COMMANDS_ERROR: {
+            "msg": "the input command is incorrect"
         }
     }
 
