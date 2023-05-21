@@ -20,6 +20,7 @@ from ceres.function.register import register, register_info_to_dict
 from ceres.function.schema import (
     CHANGE_COLLECT_ITEMS_SCHEMA,
     CVE_FIX_SCHEMA,
+    CVE_ROLLBACK_SCHEMA,
     CVE_SCAN_SCHEMA,
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
@@ -157,6 +158,7 @@ def plugin_command_manage(args):
         print("Please check the input parameters!")
         exit(1)
 
+
 def cve_command_manage(args):
     if args.set_repo:
         data = convert_string_to_json(args.set_repo)
@@ -183,6 +185,14 @@ def cve_command_manage(args):
             exit(1)
         status_code, cve_fix_result = VulnerabilityManage().cve_fix(data.get("cves"))
         res = StatusCode.make_response_body((status_code, {"result": cve_fix_result}))
+        print(json.dumps(res))
+
+    elif args.rollback:
+        data = convert_string_to_json(args.rollback)
+        if not validate_data(data, CVE_ROLLBACK_SCHEMA):
+            exit(1)
+        status_code, cve_rollback_result = VulnerabilityManage().cve_rollback(data.get("cves"))
+        res = StatusCode.make_response_body((status_code, {"result": cve_rollback_result}))
         print(json.dumps(res))
     else:
         print("Please check the input parameters!")

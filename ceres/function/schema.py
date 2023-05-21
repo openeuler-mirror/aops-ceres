@@ -136,3 +136,24 @@ HOST_INFO_SCHEMA = {
         "enum": ["os", "cpu", "memory", "disk"]
     }
 }
+
+CVE_ROLLBACK_SCHEMA = {
+    "type": "object",
+    "required": [
+        "cves"
+    ],
+    "properties": {
+        "cves": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["cve_id", "hotpatch"],
+                "properties": {
+                    "cve_id": {"type": "string", "minLength": 1},
+                    "hotpatch": {"enum": [True, False]}
+                }
+
+            }
+        }
+    }
+}

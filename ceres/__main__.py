@@ -52,6 +52,7 @@ def main():
     cve_group.add_argument("--set-repo", type=str)
     cve_group.add_argument("--scan", type=str)
     cve_group.add_argument("--fix", type=str)
+    cve_group.add_argument("--rollback", type=str)
     subparsers_cve.set_defaults(function=cve_command_manage)
 
     args = parser.parse_args()
