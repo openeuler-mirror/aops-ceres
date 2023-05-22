@@ -192,7 +192,7 @@ def cve_command_manage(args):
         if not validate_data(data, CVE_ROLLBACK_SCHEMA):
             exit(1)
         status_code, cve_rollback_result = VulnerabilityManage().cve_rollback(data.get("cves"))
-        res = StatusCode.make_response_body((status_code, {"result": cve_rollback_result}))
+        res = StatusCode.make_response_body((status_code, {"rollback_result": cve_rollback_result}))
         print(json.dumps(res))
     else:
         print("Please check the input parameters!")
