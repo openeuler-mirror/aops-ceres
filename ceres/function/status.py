@@ -22,7 +22,11 @@ SERVICE_NOT_EXIST = "Service.Not.Exist"
 TOKEN_ERROR = "Token.Error"
 REPO_CONTENT_INCORRECT = "Repo.Content.Incorrect"
 REPO_NOT_SET = "Repo.Not.Set"
+NO_COMMAND = "No.Command"
+NOT_PATCH = "Not.Patch"
+
 COMMAND_EXEC_ERROR = "Command.Error"
+
 
 class StatusCode:
     """
@@ -61,6 +65,12 @@ class StatusCode:
         },
         REPO_NOT_SET: {
             "msg": "repo source named aops-update is not set"
+        },
+        NO_COMMAND: {
+            "msg": "command not found"
+        },
+        NOT_PATCH: {
+            "msg": "no valid hot patch is matched"
         },
         COMMAND_EXEC_ERROR: {
             "msg": "the input command is incorrect"
