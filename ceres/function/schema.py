@@ -123,7 +123,7 @@ CVE_FIX_SCHEMA = {
                 "properties": {
                     "cve_id": {"type": "string", "minLength": 1},
                     "hotpatch": {"enum": [True, False]},
-                    "accepted": True
+                    "accepted": {"enum": [True, False]}
                 }
 
             }
