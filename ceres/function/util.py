@@ -13,6 +13,7 @@
 import configparser
 import json
 import os
+import subprocess
 from typing import Union, List, Any, Dict, NoReturn
 from subprocess import Popen, PIPE, STDOUT
 
@@ -24,6 +25,8 @@ from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
 from ceres.function.schema import STRING_ARRAY
 from ceres.function.status import PARAM_ERROR
+
+FAIL = 255
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:
@@ -92,6 +95,15 @@ def get_shell_data(command_list: List[str], key: bool = True, env=None,
     if key:
         return res.stdout.read().decode()
     return res
+
+
+def cmd_output(cmd):
+    try:
+        result = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result.wait()
+        return result.stdout.read().decode('utf-8'), result.returncode
+    except Exception as e:
+        return str(e), FAIL
 
 
 def load_gopher_config(gopher_config_path: str) -> AttrDict:
