@@ -17,7 +17,6 @@ from ceres.function.status import PARAM_ERROR
 
 
 class TestRegister(unittest.TestCase):
-
     def test_register_should_return_param_error_when_input_username_is_null(self):
         input_data = {
             "password": "changeme",
@@ -25,7 +24,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -38,7 +37,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -50,7 +49,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -63,7 +62,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -75,7 +74,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -88,7 +87,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -100,7 +99,7 @@ class TestRegister(unittest.TestCase):
             "host_name": "host01",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -113,7 +112,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": True,
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -125,7 +124,7 @@ class TestRegister(unittest.TestCase):
             "host_name": "host01",
             "host_group_name": "2333",
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -138,7 +137,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": "string",
             "zeus_ip": "127.0.0.1",
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -150,7 +149,7 @@ class TestRegister(unittest.TestCase):
             "host_name": "host01",
             "host_group_name": "2333",
             "management": False,
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -162,7 +161,7 @@ class TestRegister(unittest.TestCase):
             "host_name": "host01",
             "host_group_name": "2333",
             "management": False,
-            "zeus_port": "11111"
+            "zeus_port": "11111",
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -187,7 +186,7 @@ class TestRegister(unittest.TestCase):
             "host_group_name": "2333",
             "management": False,
             "zeus_ip": "127.0.0.1",
-            "zeus_port": 80
+            "zeus_port": 80,
         }
         data = register(input_data)
         self.assertEqual(PARAM_ERROR, data)
@@ -201,7 +200,7 @@ class TestRegister(unittest.TestCase):
             "management": False,
             "zeus_ip": "127.0.0.1",
             "zeus_port": "11111",
-            "ceres_port": 11000
+            "ceres_port": 11000,
         }
         data = register(input_data)
         self.assertEqual(data, PARAM_ERROR)

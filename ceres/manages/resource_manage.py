@@ -35,8 +35,7 @@ class Resource:
         """
         try:
             memory_info = get_shell_data(["cat", f"/proc/{pid}/status"], key=False)
-            memory = get_shell_data(["grep", "VmRSS"],
-                                    stdin=memory_info.stdout).split(":")[1].strip()
+            memory = get_shell_data(["grep", "VmRSS"], stdin=memory_info.stdout).split(":")[1].strip()
             memory_info.stdout.close()
 
         except InputError:
@@ -64,12 +63,12 @@ class Resource:
         try:
             memory_high = config.get("Service", "MemoryHigh")
         except configparser.NoOptionError:
-            LOGGER.warning('There is no option "MemoryHigh" in section "Service"'
-                           f' in file {service_path},please check and try again.')
+            LOGGER.warning(
+                f'There is no option "MemoryHigh" in section "Service" in file {service_path},please check and try again.'
+            )
             memory_high = None
         except configparser.NoSectionError:
-            LOGGER.warning(f'There is no section "Service" in file {service_path} ,'
-                           'please check and try again.')
+            LOGGER.warning(f'There is no section "Service" in file {service_path}, please check and try again.')
             memory_high = None
         return memory_high
 
@@ -87,15 +86,13 @@ class Resource:
         """
         try:
             all_status_info = get_shell_data(["ps", "aux"], key=False)
-            plugin_process_info = get_shell_data(["grep", "-w", f"{rpm_name}"],
-                                                 stdin=all_status_info.stdout, key=False)
+            plugin_process_info = get_shell_data(["grep", "-w", f"{rpm_name}"], stdin=all_status_info.stdout, key=False)
             all_status_info.stdout.close()
 
-            plugin_main_pid_process_info = get_shell_data(["grep", f"{pid}"],
-                                                          stdin=plugin_process_info.stdout,
-                                                          key=False)
-            cpu_usage = get_shell_data(["awk", "{print $3}"],
-                                       stdin=plugin_main_pid_process_info.stdout)
+            plugin_main_pid_process_info = get_shell_data(
+                ["grep", f"{pid}"], stdin=plugin_process_info.stdout, key=False
+            )
+            cpu_usage = get_shell_data(["awk", "{print $3}"], stdin=plugin_main_pid_process_info.stdout)
             plugin_main_pid_process_info.stdout.close()
 
         except InputError:
@@ -124,11 +121,12 @@ class Resource:
         try:
             cpu_limit = config.get("Service", "CPUQuota")
         except configparser.NoOptionError:
-            LOGGER.warning('There is no option "CPUQuota" in section "Service"'
-                           f' in file {service_path},please check and try again.')
+            LOGGER.warning(
+                'There is no option "CPUQuota" in section "Service"'
+                f' in file {service_path},please check and try again.'
+            )
             cpu_limit = None
         except configparser.NoSectionError:
-            LOGGER.warning(f'There is no section "Service" in file {service_path} ,'
-                           'please check and try again.')
+            LOGGER.warning(f'There is no section "Service" in file {service_path} ,' 'please check and try again.')
             cpu_limit = None
         return cpu_limit

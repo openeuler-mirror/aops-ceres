@@ -32,9 +32,7 @@ INFORMATION_ABOUT_RPM_SERVICE = {
 SCANNED_APPLICATION = ["mysql", "kubernetes", "hadoop", "nginx", "docker", "gala-gopher"]
 
 # provide a dict about plugin name and its class name
-PLUGIN_WITH_CLASS = {
-    'gala-gopher': "GalaGopher"
-}
+PLUGIN_WITH_CLASS = {'gala-gopher': "GalaGopher"}
 HOST_COLLECT_INFO_SUPPORT = ["cpu", "disk", "memory", "os"]
 REGISTER_HELP_INFO = """
     you can choose start or register in manager,

@@ -34,14 +34,14 @@ class Socket:
 
 
 class TestCollectManage(unittest.TestCase):
-
     def setUp(self) -> None:
         warnings.simplefilter('ignore', ResourceWarning)
 
     @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_memory_info_should_return_memory_info_when_get_shell_data_is_correct(
-            self, mock_shell_data, mock_memory_size):
+        self, mock_shell_data, mock_memory_size
+    ):
         mock_shell_data.return_value = """
             Memory Device
                     Array Handle: 0x0006
@@ -76,17 +76,9 @@ class TestCollectManage(unittest.TestCase):
             'total': 2,
             'size': "48G",
             'info': [
-                {'size': '16 GB',
-                 'type': 'DDR4',
-                 'speed': '2000 MT/s',
-                 'manufacturer': 'Test1'
-                 },
-                {'size': '32 GB',
-                 'type': 'DDR4',
-                 'speed': '2000 MT/s',
-                 'manufacturer': 'Test2'
-                 }
-            ]
+                {'size': '16 GB', 'type': 'DDR4', 'speed': '2000 MT/s', 'manufacturer': 'Test1'},
+                {'size': '32 GB', 'type': 'DDR4', 'speed': '2000 MT/s', 'manufacturer': 'Test2'},
+            ],
         }
 
         res = Collect()._get_memory_info()
@@ -95,7 +87,8 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_memory_info_should_return_empty_list_when_memory_info_is_not_showed(
-            self, mock_shell_data, mock_memory_size):
+        self, mock_shell_data, mock_memory_size
+    ):
         mock_shell_data.return_value = """
                     Memory Device
                     Array Handle: 0x0006
@@ -120,9 +113,10 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_memory_info_should_return_empty_dict_when_get_shell_data_is_incorrect_data(
-            self, mock_shell_data, mock_memory_size):
+        self, mock_shell_data, mock_memory_size
+    ):
         """
-            This situation exists in the virtual machine
+        This situation exists in the virtual machine
         """
         mock_shell_data.return_value = """
                 test text 
@@ -134,15 +128,15 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(Collect, "_Collect__get_total_online_memory")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_memory_info_should_return_empty_dict_when_get_shell_data_error(
-            self, mock_shell_data, mock_memory_size):
+        self, mock_shell_data, mock_memory_size
+    ):
         mock_shell_data.side_effect = InputError('')
         mock_memory_size.return_value = ''
         res = Collect()._get_memory_info()
         self.assertEqual({}, res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_size_should_return_memory_size_when_get_shell_data_is_correct_data(self,
-                                                                                           mock_shell_data):
+    def test_get_memory_size_should_return_memory_size_when_get_shell_data_is_correct_data(self, mock_shell_data):
         mock_shell_data.return_value = '''
             Memory block size:       128M
             Total online memory:     2.5G
@@ -152,8 +146,7 @@ class TestCollectManage(unittest.TestCase):
         self.assertEqual('2.5G', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_size_should_return_empty_str_when_get_shell_data_is_incorrect_data(self,
-                                                                                           mock_shell_data):
+    def test_get_memory_size_should_return_empty_str_when_get_shell_data_is_incorrect_data(self, mock_shell_data):
         mock_shell_data.return_value = '''
             Memory block size:       128M
         '''
@@ -161,23 +154,23 @@ class TestCollectManage(unittest.TestCase):
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_memory_size_should_return_empty_str_when_get_shell_data_error(self,
-                                                                               mock_shell_data):
+    def test_get_memory_size_should_return_empty_str_when_get_shell_data_error(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         res = Collect._Collect__get_total_online_memory()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_cpu_info_should_return_correct_info_when_execute_command_successful(
-            self, mock_shell_data):
-        mock_shell_data.return_value = 'Architecture:                    x86_64\n' \
-                                       'CPU(s):                          1\n' \
-                                       'Model name:                      AMD Test\n' \
-                                       'Vendor ID:                       AuthenticAMD\n' \
-                                       'L1d cache:                       32 KiB\n' \
-                                       'L1i cache:                       32 KiB\n' \
-                                       'L2 cache:                        512 KiB\n' \
-                                       'L3 cache:                        8 MiB\n'
+    def test_get_cpu_info_should_return_correct_info_when_execute_command_successful(self, mock_shell_data):
+        mock_shell_data.return_value = (
+            'Architecture:                    x86_64\n'
+            'CPU(s):                          1\n'
+            'Model name:                      AMD Test\n'
+            'Vendor ID:                       AuthenticAMD\n'
+            'L1d cache:                       32 KiB\n'
+            'L1i cache:                       32 KiB\n'
+            'L2 cache:                        512 KiB\n'
+            'L3 cache:                        8 MiB\n'
+        )
         expect_res = {
             "architecture": "x86_64",
             "core_count": "1",
@@ -186,14 +179,15 @@ class TestCollectManage(unittest.TestCase):
             "l1d_cache": "32 KiB",
             "l1i_cache": "32 KiB",
             "l2_cache": "512 KiB",
-            "l3_cache": "8 MiB"
+            "l3_cache": "8 MiB",
         }
         res = Collect._get_cpu_info()
         self.assertEqual(expect_res, res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_cpu_info_should_return_null_when_execute_command_successful_but_not_get_expected_information(
-            self, mock_shell_data):
+        self, mock_shell_data
+    ):
         mock_shell_data.return_value = ''
         expect_res = {
             "architecture": None,
@@ -203,21 +197,19 @@ class TestCollectManage(unittest.TestCase):
             "l1d_cache": None,
             "l1i_cache": None,
             "l2_cache": None,
-            "l3_cache": None
+            "l3_cache": None,
         }
         res = Collect._get_cpu_info()
         self.assertEqual(expect_res, res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_cpu_info_should_return_empty_dict_when_host_has_no_command_lscpu(
-            self, mock_shell_data):
+    def test_get_cpu_info_should_return_empty_dict_when_host_has_no_command_lscpu(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         res = Collect._get_cpu_info()
         self.assertEqual({}, res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_kernel_version_should_return_cpu_info_when_execute_command_successfully(
-            self, mock_shell_data):
+    def test_get_kernel_version_should_return_cpu_info_when_execute_command_successfully(self, mock_shell_data):
         mock_shell_data.return_value = '5.10.0-5.10.0.24.oe1.x86_64'
         expect_res = '5.10.0-5.10.0.24'
         res = Collect._Collect__get_kernel_version()
@@ -225,21 +217,20 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_kernel_version_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
-            self, mock_shell_data):
+        self, mock_shell_data
+    ):
         mock_shell_data.return_value = 'test_info'
         res = Collect._Collect__get_kernel_version()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_kernel_version_should_return_cpu_info_when_host_has_no_command_uname(self,
-                                                                                      mock_shell_data):
+    def test_get_kernel_version_should_return_cpu_info_when_host_has_no_command_uname(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         res = Collect._Collect__get_kernel_version()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_bios_version_should_return_cpu_info_when_execute_command_successfully(self,
-                                                                                       mock_shell_data):
+    def test_get_bios_version_should_return_cpu_info_when_execute_command_successfully(self, mock_shell_data):
         mock_shell_data.return_value = """
                 BIOS Information
                 Vendor: innotek GmbH
@@ -263,21 +254,20 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_bios_version_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
-            self, mock_shell_data):
+        self, mock_shell_data
+    ):
         mock_shell_data.return_value = 'test_info'
         res = Collect._Collect__get_bios_version()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_bios_version_should_return_cpu_info_when_host_has_no_command_dmidecode(self,
-                                                                                        mock_shell_data):
+    def test_get_bios_version_should_return_cpu_info_when_host_has_no_command_dmidecode(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         res = Collect._Collect__get_bios_version()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_system_info_should_return_cpu_info_when_execute_command_successfully(self,
-                                                                                      mock_shell_data):
+    def test_get_system_info_should_return_cpu_info_when_execute_command_successfully(self, mock_shell_data):
         mock_shell_data.return_value = """
                     NAME="openEuler"
                     VERSION="21.09"
@@ -292,14 +282,14 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_system_info_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
-            self, mock_shell_data):
+        self, mock_shell_data
+    ):
         mock_shell_data.return_value = 'test_info'
         res = Collect.get_system_info()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_system_info_should_return_cpu_info_when_host_has_no_command_cat(self,
-                                                                                 mock_shell_data):
+    def test_get_system_info_should_return_cpu_info_when_host_has_no_command_cat(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         res = Collect.get_system_info()
         self.assertEqual('', res)
@@ -310,22 +300,22 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(os.path, 'getsize')
     @mock.patch.object(os, 'access')
     def test_get_file_info_should_return_file_content_when_target_file_exist_and_not_executable_and_less_than_1m(
-            self, mock_os_access, mock_getsize, mock_os_stat, mock_getgrgid, mock_getpwduid):
+        self, mock_os_access, mock_getsize, mock_os_stat, mock_getgrgid, mock_getpwduid
+    ):
         file_path = mock.Mock(return_value='test')
         mock_os_access.return_value = False
         mock_os_stat.st_mode.return_value = 33198
         mock_os_stat.st_uid.return_value = '123456'
         mock_os_stat.st_gid.return_value = '123456'
         mock_getsize.return_value = 1024
-        mock_getgrgid.return_value = 1001,
-        mock_getpwduid.return_value = 1001,
+        mock_getgrgid.return_value = (1001,)
+        mock_getpwduid.return_value = (1001,)
         with mock.patch('builtins.open', mock.mock_open(read_data='123456')):
             info = Collect.get_file_info(file_path)
         self.assertEqual('123456', info.get('content'))
 
     @mock.patch.object(os, 'access')
-    def test_get_file_info_should_return_empty_dict_when_target_file_can_execute(self,
-                                                                                 mock_os_access):
+    def test_get_file_info_should_return_empty_dict_when_target_file_can_execute(self, mock_os_access):
         file_path = mock.Mock(return_value='test')
         mock_os_access.return_value = True
         info = Collect.get_file_info(file_path)
@@ -333,9 +323,9 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch.object(os.path, 'getsize')
     @mock.patch.object(os, 'access')
-    def test_get_file_info_should_return_empty_dict_when_target_file_is_larger_than_1m(self,
-                                                                                       mock_os_access,
-                                                                                       mock_getsize):
+    def test_get_file_info_should_return_empty_dict_when_target_file_is_larger_than_1m(
+        self, mock_os_access, mock_getsize
+    ):
         file_path = mock.Mock(return_value='test')
         mock_os_access.return_value = False
         mock_getsize.return_value = 1024 * 1024 * 2
@@ -344,9 +334,9 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch.object(os.path, 'getsize')
     @mock.patch.object(os, 'access')
-    def test_get_file_info_should_return_empty_dict_when_target_file_is_not_encoded_by_utf8(self,
-                                                                                            mock_os_access,
-                                                                                            mock_getsize):
+    def test_get_file_info_should_return_empty_dict_when_target_file_is_not_encoded_by_utf8(
+        self, mock_os_access, mock_getsize
+    ):
         file_path = mock.Mock(return_value='test')
         mock_os_access.return_value = False
         mock_getsize.return_value = 1024 * 1024
@@ -357,8 +347,7 @@ class TestCollectManage(unittest.TestCase):
 
     @mock.patch.object(mock.Mock, 'stdout', create=True)
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_uuid_should_return_uuid_string_when_all_is_right(
-            self, mock_shell, mock_stdout):
+    def test_get_uuid_should_return_uuid_string_when_all_is_right(self, mock_shell, mock_stdout):
         mock_shell.side_effect = (mock.Mock, 'UUID: m-o-c-k-uuid')
         mock_stdout.return_value = None
         mock_shell.stdout.return_value = ''
@@ -366,8 +355,7 @@ class TestCollectManage(unittest.TestCase):
         self.assertEqual('mockuuid', res)
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_uuid_should_return_empty_string_when_command_execution_failed(
-            self, mock_shell):
+    def test_get_uuid_should_return_empty_string_when_command_execution_failed(self, mock_shell):
         mock_shell.side_effect = InputError('')
         res = Collect.get_uuid()
         self.assertEqual('', res)
@@ -391,31 +379,25 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(mock.Mock, 'stdout', create=True)
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_installed_package_should_return_installed_packages_when_execute_command_successfully(
-            self, mock_shell_data, mock_stdout):
+        self, mock_shell_data, mock_stdout
+    ):
         mock_stdout.return_value = None
         mock_shell_data.stdout.return_value = ''
-        mock_shell_data.side_effect = (mock.Mock(),
-                                       "Source RPM: perl-Encode-Locale-1.05-12.oe1.src.rpm\n"
-                                       "Source RPM: glib-networking-2.58.0-7.oe1.src.rpm\n"
-                                       "Source RPM: dnf-4.2.15-8.oe1.src.rpm")
+        mock_shell_data.side_effect = (
+            mock.Mock(),
+            "Source RPM: perl-Encode-Locale-1.05-12.oe1.src.rpm\n"
+            "Source RPM: glib-networking-2.58.0-7.oe1.src.rpm\n"
+            "Source RPM: dnf-4.2.15-8.oe1.src.rpm",
+        )
         expected_result = [
-            {
-                "name": "perl-Encode-Locale",
-                "version": "1.05-12"
-            },
-            {
-                "name": "glib-networking",
-                "version": "2.58.0-7"
-            },
-            {
-                "name": "dnf",
-                "version": "4.2.15-8"
-            }]
+            {"name": "perl-Encode-Locale", "version": "1.05-12"},
+            {"name": "glib-networking", "version": "2.58.0-7"},
+            {"name": "dnf", "version": "4.2.15-8"},
+        ]
         self.assertEqual(expected_result, Collect.get_installed_packages())
 
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
-    def test_get_installed_package_should_return_empty_list_when_execute_command_failed(
-            self, mock_shell_data):
+    def test_get_installed_package_should_return_empty_list_when_execute_command_failed(self, mock_shell_data):
         mock_shell_data.side_effect = InputError('')
         self.assertEqual([], Collect.get_installed_packages())
 
@@ -423,32 +405,27 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(Collect, "_Collect__get_bios_version")
     @mock.patch.object(Collect, "get_system_info")
     def test_get_os_info_should_return_os_info_when_execute_command_failed(
-            self, mock_system_info, mock_bios_version, mock_kernel_version):
+        self, mock_system_info, mock_bios_version, mock_kernel_version
+    ):
         mock_system_info.return_value = "mock_os_version"
         mock_bios_version.return_value = "mock_bios_version"
         mock_kernel_version.return_value = "mock_kernel_version"
         expected_result = {
             "os_version": "mock_os_version",
             "bios_version": "mock_bios_version",
-            "kernel": "mock_kernel_version"
+            "kernel": "mock_kernel_version",
         }
         self.assertEqual(expected_result, Collect()._get_os_info())
 
     @mock.patch.object(Collect, "_get_os_info")
     @mock.patch.object(Collect, "_get_disk_info")
-    def test_get_host_info_should_return_host_info_when_input_info_type_is_correct(
-            self, mock_disk_info, mock_os_info):
+    def test_get_host_info_should_return_host_info_when_input_info_type_is_correct(self, mock_disk_info, mock_os_info):
         os_info = {
             "os_version": "mock_os_version",
             "bios_version": "mock_bios_version",
-            "kernel": "mock_kernel_version"
+            "kernel": "mock_kernel_version",
         }
-        disk_info = [
-            {
-                "capacity": "40GB",
-                "model": "MOCK HARDDISK"
-            }
-        ]
+        disk_info = [{"capacity": "40GB", "model": "MOCK HARDDISK"}]
         mock_os_info.return_value = os_info
         mock_disk_info.return_value = disk_info
         expected_result = {"disk": disk_info, "os": os_info}
@@ -467,7 +444,8 @@ class TestCollectManage(unittest.TestCase):
     @mock.patch.object(json, "loads")
     @mock.patch('ceres.manages.collect_manage.get_shell_data')
     def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_but_decode_error(
-            self, mock_shell, mock_json_loads):
+        self, mock_shell, mock_json_loads
+    ):
         mock_shell.return_value = '{"product": "MOCK PRODUCT", "size": 42949672960}'
         mock_json_loads.side_effect = json.decoder.JSONDecodeError('', '', int())
         self.assertEqual([], Collect()._get_disk_info())

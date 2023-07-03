@@ -12,13 +12,11 @@
 # ******************************************************************************/
 import os
 
-gopher = {
-    "CONFIG_PATH": "/opt/gala-gopher/gala-gopher.conf"
-}
+gopher = {"CONFIG_PATH": "/opt/gala-gopher/gala-gopher.conf"}
 
 log = {
     "LOG_DIR": os.path.join('/', 'var', 'log', 'aops'),
     "LOG_LEVEL": 'INFO',
     "MAX_BYTES": 31457280,
-    "BACKUP_COUNT": 30
+    "BACKUP_COUNT": 30,
 }

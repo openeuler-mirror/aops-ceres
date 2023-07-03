@@ -67,8 +67,7 @@ def validate_data(data: Any, schema: dict) -> bool:
         return False
 
 
-def get_shell_data(command_list: List[str], key: bool = True, env=None,
-                   stdin: Popen = None) -> Union[str, Popen]:
+def get_shell_data(command_list: List[str], key: bool = True, env=None, stdin: Popen = None) -> Union[str, Popen]:
     """
     execute shell commands
 
@@ -141,12 +140,12 @@ def plugin_status_judge(plugin_name: str) -> str:
     if plugin_name in INFORMATION_ABOUT_RPM_SERVICE.keys():
         service_name = INFORMATION_ABOUT_RPM_SERVICE.get(plugin_name).get('service_name')
         if service_name is None:
-            LOGGER.warning(f"Fail to get service name about {plugin_name},"
-                           f"please check that the project file is complete.")
+            LOGGER.warning(
+                f"Fail to get service name about {plugin_name}," f"please check that the project file is complete."
+            )
             return ""
     else:
-        LOGGER.debug(f'Input plugin {plugin_name} is not supported, '
-                     f'please check and try again')
+        LOGGER.debug(f'Input plugin {plugin_name} is not supported, ' f'please check and try again')
         return ""
 
     try:
@@ -179,8 +178,7 @@ def get_dict_from_file(file_path: str) -> dict:
     return data
 
 
-def save_data_to_file(data: str,
-                      file_path: str, mode: str = 'w', encoding: str = 'utf-8') -> NoReturn:
+def save_data_to_file(data: str, file_path: str, mode: str = 'w', encoding: str = 'utf-8') -> NoReturn:
     """
         save data to specified path,create it if it doesn't exist
 

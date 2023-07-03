@@ -34,8 +34,7 @@ def register_info_to_dict(string: str) -> dict:
     try:
         res = json.loads(string)
     except json.decoder.JSONDecodeError:
-        LOGGER.error('Json conversion error, the data entered is not'
-                     ' json format.')
+        LOGGER.error('Json conversion error, the data entered is not' ' json format.')
         res = {}
     if not isinstance(res, dict):
         res = {}
@@ -66,13 +65,11 @@ def register(register_info: dict) -> int:
     if not validate_data(register_info, REGISTER_SCHEMA):
         return PARAM_ERROR
 
-    headers = {'content-type': 'application/json',
-               "access_token": register_info.pop('access_token')}
+    headers = {'content-type': 'application/json', "access_token": register_info.pop('access_token')}
     register_info['host_ip'] = Collect.get_host_ip()
     url = f'http://{register_info.pop("zeus_ip")}:{register_info.pop("zeus_port")}/manage/host/add'
     try:
-        ret = requests.post(url, data=json.dumps(register_info),
-                            headers=headers, timeout=5)
+        ret = requests.post(url, data=json.dumps(register_info), headers=headers, timeout=5)
     except requests.exceptions.RequestException as e:
         LOGGER.error(e)
         return HTTP_CONNECT_ERROR

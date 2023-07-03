@@ -23,7 +23,7 @@ from ceres.conf.constant import (
     INFORMATION_ABOUT_RPM_SERVICE,
     INSTALLABLE_PLUGIN,
     PLUGIN_WITH_CLASS,
-    SCANNED_APPLICATION
+    SCANNED_APPLICATION,
 )
 from ceres.function.log import LOGGER
 from ceres.function.util import get_shell_data, plugin_status_judge
@@ -34,7 +34,7 @@ from ceres.models.custom_exception import InputError
 
 class Collect:
     """
-        Provides functions to collect information.
+    Provides functions to collect information.
     """
 
     def get_host_info(self, info_type: List[str]) -> dict:
@@ -113,8 +113,7 @@ class Collect:
         res = re.search('(?=PRETTY_NAME=).+', os_data)
         if res:
             return res.group()[12:].strip('"').replace(' ', '-')
-        LOGGER.warning('Failed to get os version info, '
-                       'please check file /etc/os-release and try it again')
+        LOGGER.warning('Failed to get os version info, ' 'please check file /etc/os-release and try it again')
         return ''
 
     def _get_os_info(self) -> Dict[str, str]:
@@ -131,7 +130,7 @@ class Collect:
         res = {
             'os_version': self.get_system_info(),
             'bios_version': self.__get_bios_version(),
-            'kernel': self.__get_kernel_version()
+            'kernel': self.__get_kernel_version(),
         }
         return res
 
@@ -216,7 +215,7 @@ class Collect:
             "l1d_cache": cpu_info.get('L1d cache'),
             "l1i_cache": cpu_info.get('L1i cache'),
             "l2_cache": cpu_info.get('L2 cache'),
-            "l3_cache": cpu_info.get('L3 cache')
+            "l3_cache": cpu_info.get('L3 cache'),
         }
 
         return res
@@ -285,15 +284,14 @@ class Collect:
                 part_info = module_info.split(':')
                 module_info_dict[part_info[0].strip()] = part_info[1].strip()
 
-            if module_info_dict.get('Size') is None or \
-                    module_info_dict.get('Size') == 'No Module Installed':
+            if module_info_dict.get('Size') is None or module_info_dict.get('Size') == 'No Module Installed':
                 continue
 
             memory_info = {
                 "size": module_info_dict.get('Size'),
                 "type": module_info_dict.get('Type'),
                 "speed": module_info_dict.get('Speed'),
-                "manufacturer": module_info_dict.get('Manufacturer')
+                "manufacturer": module_info_dict.get('Manufacturer'),
             }
             info.append(memory_info)
 
@@ -329,17 +327,13 @@ class Collect:
         try:
             disk_info_list = json.loads(lshw_data)
         except json.decoder.JSONDecodeError:
-            LOGGER.warning("Json conversion error, "
-                           "please check command 'lshw -json -c disk'")
+            LOGGER.warning("Json conversion error, " "please check command 'lshw -json -c disk'")
             disk_info_list = []
 
         res = []
         if disk_info_list:
             for disk_info in disk_info_list:
-                tmp = {
-                    "model": disk_info.get('product'),
-                    "capacity": f"{disk_info.get('size', 0) // 10 ** 9}GB"
-                }
+                tmp = {"model": disk_info.get('product'), "capacity": f"{disk_info.get('size', 0) // 10 ** 9}GB"}
                 res.append(tmp)
 
         return res
@@ -379,12 +373,8 @@ class Collect:
         file_group = grp.getgrgid(file_attr.st_gid)[0]
         info = {
             'path': file_path,
-            'file_attr': {
-                'mode': file_mode,
-                'owner': file_owner,
-                'group': file_group
-            },
-            'content': content
+            'file_attr': {'mode': file_mode, 'owner': file_owner, 'group': file_group},
+            'content': content,
         }
         return info
 
@@ -452,10 +442,7 @@ class Collect:
             pkg_version = f"{package_info[1]}-{package_info[-1].split('.')[0]}"
             key = package + pkg_version
             if key not in package_info_dict:
-                package_info_dict[key] = {
-                    "name": package,
-                    "version": pkg_version
-                }
+                package_info_dict[key] = {"name": package, "version": pkg_version}
 
         return list(package_info_dict.values())
 
@@ -506,12 +493,7 @@ class Collect:
 
         res = []
         for plugin_name in plugin_list:
-            plugin_running_info = {
-                "plugin_name": plugin_name,
-                "collect_items": [],
-                "status": None,
-                "resource": []
-            }
+            plugin_running_info = {"plugin_name": plugin_name, "collect_items": [], "status": None, "resource": []}
 
             if not plugin_status_judge(plugin_name):
                 plugin_running_info["is_installed"] = False
@@ -541,16 +523,8 @@ class Collect:
                     collect_items_status = plugin_obj.get_collect_status()
 
             resource = []
-            cpu = {
-                "name": "cpu",
-                "current_value": cpu_current,
-                "limit_value": cpu_limit
-            }
-            memory = {
-                "name": "memory",
-                "current_value": memory_current,
-                "limit_value": memory_limit
-            }
+            cpu = {"name": "cpu", "current_value": cpu_current, "limit_value": cpu_limit}
+            memory = {"name": "memory", "current_value": memory_current, "limit_value": memory_limit}
             resource.append(cpu)
             resource.append(memory)
             plugin_running_info["status"] = status
@@ -561,12 +535,7 @@ class Collect:
 
     @staticmethod
     def collect_file(config_path_list: list) -> dict:
-        result = {
-            "success_files": [],
-            "fail_files": [],
-            "infos": [
-            ]
-        }
+        result = {"success_files": [], "fail_files": [], "infos": []}
 
         for file_path in config_path_list:
             if not os.path.exists(file_path) or not os.path.isfile(file_path):
