@@ -65,3 +65,8 @@ REGISTER_HELP_INFO = """
     }
 
 """
+
+
+class CommandExitCode:
+    SUCCEED = 0
+    FAIL = 255
