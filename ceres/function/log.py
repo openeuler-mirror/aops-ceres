@@ -36,7 +36,8 @@ class Logger:
         self.__max_bytes = configuration.log.get('MAX_BYTES')
         self.__backup_count = configuration.log.get('BACKUP_COUNT')
         self.__log_format = logging.Formatter(
-            "%(asctime)s %(levelname)s %(module)s/%(funcName)s/%(lineno)s: %(message)s")
+            "%(asctime)s %(levelname)s %(module)s/%(funcName)s/%(lineno)s: %(message)s"
+        )
 
         self.check()
 
@@ -101,7 +102,8 @@ class Logger:
             maxBytes=self.__max_bytes,
             backupCount=self.__backup_count,
             encoding='utf-8',
-            chmod=(stat.S_IRUSR | stat.S_IWUSR))
+            chmod=(stat.S_IRUSR | stat.S_IWUSR),
+        )
         rotate_handler.setFormatter(self.__log_format)
 
         return rotate_handler

@@ -26,7 +26,9 @@ class TestStatus(unittest.TestCase):
         res = StatusCode.make_response_body((SUCCESS, {"mock": "mock"}))
         self.assertEqual(expect_res, res)
 
-    def test_make_response_body_should_return_response_body_and_data_when_input_status_code_and_data_and_code_is_not_in_mapping(self):
+    def test_make_response_body_should_return_response_body_and_data_when_input_status_code_and_data_and_code_is_not_in_mapping(
+        self,
+    ):
         expect_res = {'code': 900, 'msg': 'unknown error'}
         res = StatusCode.make_response_body(900)
         self.assertEqual(expect_res, res)

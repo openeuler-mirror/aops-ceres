@@ -6,12 +6,7 @@ from setuptools import setup, find_packages
 NAME = "aops-ceres"
 VERSION = "1.2.0"
 
-INSTALL_REQUIRES = [
-    "jsonschema",
-    "requests",
-    "libconf",
-    "concurrent_log_handler"
-]
+INSTALL_REQUIRES = ["jsonschema", "requests", "libconf", "concurrent_log_handler"]
 
 setup(
     name=NAME,
@@ -22,13 +17,9 @@ setup(
     keywords=["A-Ops ceres"],
     install_requires=INSTALL_REQUIRES,
     packages=find_packages(),
-    data_files=[
-        ('/etc/aops', ['conf/ceres.conf']),
-        ('/opt/aops', ['conf/register_example.json'])
-    ],
-    entry_points={
-        'console_scripts': ['aops-ceres=ceres.__main__:main']},
+    data_files=[('/etc/aops', ['conf/ceres.conf']), ('/opt/aops', ['conf/register_example.json'])],
+    entry_points={'console_scripts': ['aops-ceres=ceres.__main__:main']},
     long_description="""\
     GroupDesc
-    """
+    """,
 )

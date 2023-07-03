@@ -18,17 +18,12 @@ from unittest import mock
 
 import libconf
 
-from ceres.function.util import (
-    load_gopher_config,
-    plugin_status_judge,
-    get_dict_from_file,
-    update_ini_data_value
-)
+from ceres.function.util import load_gopher_config, plugin_status_judge, get_dict_from_file, update_ini_data_value
 from ceres.models.custom_exception import InputError
 
 
 class TestUtil(unittest.TestCase):
-    MOCK_GOPHER_CONFIG ='''
+    MOCK_GOPHER_CONFIG = '''
         mock_key =
     (
     {
@@ -42,12 +37,11 @@ class TestUtil(unittest.TestCase):
         interval = 1;
     },
     );'''
+
     @mock.patch.object(mock.Mock, 'stdout', create=True)
     @mock.patch('ceres.function.util.get_shell_data')
-    @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE',
-                {"mock": {"service_name": "mock"}})
-    def test_plugin_status_judge_should_return_plugin_status_when_all_is_right(
-            self, mock_shell, mock_stdout):
+    @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {"mock": {"service_name": "mock"}})
+    def test_plugin_status_judge_should_return_plugin_status_when_all_is_right(self, mock_shell, mock_stdout):
         mock_status_string = 'Active: active (running)'
         mock_shell.side_effect = (mock.Mock, mock_status_string)
         mock_stdout.return_value = None
@@ -56,22 +50,18 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(mock_status_string, res)
 
     @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {})
-    def test_plugin_status_judge_should_return_empty_string_when_input_plugin_is_not_support(
-            self):
+    def test_plugin_status_judge_should_return_empty_string_when_input_plugin_is_not_support(self):
         res = plugin_status_judge('mock')
         self.assertEqual('', res)
 
     @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {'mock': {}})
-    def test_plugin_status_judge_should_return_empty_string_when_get_plugin_service_name_failed(
-            self):
+    def test_plugin_status_judge_should_return_empty_string_when_get_plugin_service_name_failed(self):
         res = plugin_status_judge('mock')
         self.assertEqual('', res)
 
     @mock.patch('ceres.function.util.get_shell_data')
-    @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE',
-                {"mock": {"service_name": "mock"}})
-    def test_plugin_status_judge_should_return_empty_string_when_command_execution_failed(
-            self, mock_shell):
+    @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {"mock": {"service_name": "mock"}})
+    def test_plugin_status_judge_should_return_empty_string_when_command_execution_failed(self, mock_shell):
         mock_shell.side_effect = InputError('')
         res = plugin_status_judge('mock')
         self.assertEqual('', res)
@@ -88,15 +78,13 @@ class TestUtil(unittest.TestCase):
 
     @mock.patch.object(json, 'load')
     @mock.patch('builtins.open', mock.mock_open(read_data='{"mock":"info"}'))
-    def test_get_dict_from_file_should_return_empty_dict_when_file_content_is_not_json_string(
-            self, mock_json_load):
+    def test_get_dict_from_file_should_return_empty_dict_when_file_content_is_not_json_string(self, mock_json_load):
         mock_json_load.side_effect = json.decoder.JSONDecodeError('err', 'mock_dic', int())
         res = get_dict_from_file('')
         self.assertEqual({}, res)
 
     @mock.patch('builtins.open')
-    def test_get_dict_from_file_should_return_empty_dict_when_file_path_is_wrong(
-            self, mock_open):
+    def test_get_dict_from_file_should_return_empty_dict_when_file_path_is_wrong(self, mock_open):
         mock_open.side_effect = FileNotFoundError()
         res = get_dict_from_file('')
         self.assertEqual({}, res)
@@ -105,7 +93,8 @@ class TestUtil(unittest.TestCase):
     @mock.patch('ceres.function.util.load_conf')
     @mock.patch('builtins.open', mock.mock_open())
     def test_update_ini_data_value_should_return_update_success_when_input_data_is_in_target_file(
-            self, mock_configparser, mock_mkdir):
+        self, mock_configparser, mock_mkdir
+    ):
         mock_mkdir.return_value = None
 
         mock_parser = configparser.RawConfigParser()
@@ -120,7 +109,8 @@ class TestUtil(unittest.TestCase):
     @mock.patch('ceres.function.util.load_conf')
     @mock.patch('builtins.open', mock.mock_open())
     def test_update_ini_data_value_should_return_update_success_configparser_when_file_path_is_wrong(
-            self, mock_configparser, mock_mkdir):
+        self, mock_configparser, mock_mkdir
+    ):
         mock_mkdir.return_value = None
 
         mock_parser = configparser.RawConfigParser()
@@ -134,7 +124,8 @@ class TestUtil(unittest.TestCase):
     @mock.patch('ceres.function.util.load_conf')
     @mock.patch('builtins.open', mock.mock_open())
     def test_update_ini_data_value_should_return_update_success_when_input_data_is_not_in_target_file(
-            self, mock_configparser, mock_mkdir):
+        self, mock_configparser, mock_mkdir
+    ):
         mock_mkdir.return_value = None
 
         mock_parser = configparser.RawConfigParser()

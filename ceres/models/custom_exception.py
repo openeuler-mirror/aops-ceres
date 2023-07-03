@@ -12,7 +12,7 @@
 # ******************************************************************************/
 class InputError(Exception):
     """
-        Custom Exception
+    Custom Exception
     """
 
     def __init__(self, value):
@@ -25,7 +25,7 @@ class InputError(Exception):
 
 class NoCommandError(Exception):
     """
-        Custom Exception
+    Custom Exception
     """
 
     def __init__(self, value):

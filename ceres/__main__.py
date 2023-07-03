@@ -16,7 +16,7 @@ from ceres.function.command import (
     collect_command_manage,
     cve_command_manage,
     plugin_command_manage,
-    register_on_manager
+    register_on_manager,
 )
 
 
@@ -27,8 +27,7 @@ def main():
 
     subparse_register = subparsers.add_parser('register', help='register in aops-zeus')
     register_group = subparse_register.add_mutually_exclusive_group(required=True)
-    register_group.add_argument('-f', '--path', type=str,
-                                help="file contains data which register need")
+    register_group.add_argument('-f', '--path', type=str, help="file contains data which register need")
     register_group.add_argument('-d', '--data', type=str, help="json data which register need")
     subparse_register.set_defaults(function=register_on_manager)
 

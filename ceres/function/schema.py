@@ -10,23 +10,11 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-STRING_ARRAY = {
-    "type": "array",
-    "items": {
-        "type": "string",
-        "minLength": 1
-    },
-    "minItems": 1
-}
+STRING_ARRAY = {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
 
 CHANGE_COLLECT_ITEMS_SCHEMA = {
     "type": "object",
-    "additionalProperties": {
-        "type": "object",
-        "additionalProperties": {
-            "enum": ["on", "off", "auto"]
-        }
-    }
+    "additionalProperties": {"type": "object", "additionalProperties": {"enum": ["on", "off", "auto"]}},
 }
 REGISTER_SCHEMA = {
     "type": "object",
@@ -39,7 +27,7 @@ REGISTER_SCHEMA = {
         "management",
         "ssh_user",
         "password",
-        "ssh_port"
+        "ssh_port",
     ],
     "properties": {
         "host_name": {"type": "string", "minLength": 1},
@@ -50,17 +38,13 @@ REGISTER_SCHEMA = {
         "zeus_ip": {"type": "string", "minLength": 8},
         "zeus_port": {"type": "integer", "minimum": 1},
         "ssh_port": {"type": "integer", "minimum": 1},
-        "access_token": {"type": "string", "minLength": 1}
-    }
+        "access_token": {"type": "string", "minLength": 1},
+    },
 }
 
 REPO_SET_SCHEMA = {
     "type": "object",
-    "required": [
-        "repo_info",
-        "check_items",
-        "check"
-    ],
+    "required": ["repo_info", "check_items", "check"],
     "properties": {
         "repo_info": {
             "type": "object",
@@ -68,52 +52,29 @@ REPO_SET_SCHEMA = {
             "properties": {
                 "name": {"type": "string", "minLength": 1},
                 "repo_content": {"type": "string", "minLength": 1},
-                "dest": {"type": "string", "minLength": 1}
-            }
+                "dest": {"type": "string", "minLength": 1},
+            },
         },
-        "check_items": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
-        "check": {"enum": [True, False]}
-    }
+        "check_items": {"type": "array", "items": {"type": "string"}},
+        "check": {"enum": [True, False]},
+    },
 }
 
 CVE_SCAN_SCHEMA = {
     "type": "object",
-    "required": [
-        "check",
-        "check_items",
-        "basic"
-    ],
+    "required": ["check", "check_items", "basic"],
     "properties": {
-        "check_items": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
+        "check_items": {"type": "array", "items": {"type": "string"}},
         "check": {"enum": [True, False]},
         "basic": {"enum": [True, False]},
-    }
+    },
 }
 
 CVE_FIX_SCHEMA = {
     "type": "object",
-    "required": [
-        "check",
-        "check_items",
-        "cves"
-    ],
+    "required": ["check", "check_items", "cves"],
     "properties": {
-        "check_items": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
+        "check_items": {"type": "array", "items": {"type": "string"}},
         "check": {"enum": [True, False]},
         "cves": {
             "type": "array",
@@ -123,38 +84,26 @@ CVE_FIX_SCHEMA = {
                 "properties": {
                     "cve_id": {"type": "string", "minLength": 1},
                     "hotpatch": {"enum": [True, False]},
-                    "accepted": {"enum": [True, False]}
-                }
-
-            }
-        }
-    }
+                    "accepted": {"enum": [True, False]},
+                },
+            },
+        },
+    },
 }
 
-HOST_INFO_SCHEMA = {
-    "type": "array",
-    "items": {
-        "enum": ["os", "cpu", "memory", "disk"]
-    }
-}
+HOST_INFO_SCHEMA = {"type": "array", "items": {"enum": ["os", "cpu", "memory", "disk"]}}
 
 CVE_ROLLBACK_SCHEMA = {
     "type": "object",
-    "required": [
-        "cves"
-    ],
+    "required": ["cves"],
     "properties": {
         "cves": {
             "type": "array",
             "items": {
                 "type": "object",
                 "required": ["cve_id", "hotpatch"],
-                "properties": {
-                    "cve_id": {"type": "string", "minLength": 1},
-                    "hotpatch": {"enum": [True, False]}
-                }
-
-            }
+                "properties": {"cve_id": {"type": "string", "minLength": 1}, "hotpatch": {"enum": [True, False]}},
+            },
         }
-    }
+    },
 }

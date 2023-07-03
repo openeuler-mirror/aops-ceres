@@ -22,11 +22,7 @@ from ceres.conf.constant import INSTALLABLE_PLUGIN
 from ceres.function.status import SUCCESS, SERVICE_NOT_EXIST
 from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
-from ceres.function.util import (
-    get_shell_data,
-    load_gopher_config,
-    plugin_status_judge
-)
+from ceres.function.util import get_shell_data, load_gopher_config, plugin_status_judge
 
 
 @dataclass
@@ -38,6 +34,7 @@ class Plugin:
     Attributes:
         _rpm_name: the rpm package name
     """
+
     __slots__ = "_rpm_name"
     _rpm_name: str
 
@@ -154,6 +151,7 @@ class GalaGopher(Plugin):
     """
     Some methods only available to Gopher
     """
+
     _rpm_name: str = 'gala-gopher'
 
     @classmethod
@@ -176,8 +174,7 @@ class GalaGopher(Plugin):
         return probes
 
     @staticmethod
-    def __judge_probe_can_change(probe: libconf.AttrDict,
-                                 probe_status: Dict[str, str]) -> bool:
+    def __judge_probe_can_change(probe: libconf.AttrDict, probe_status: Dict[str, str]) -> bool:
         """
             Determine which probe can be changed.
             It must meet the following conditions
@@ -206,14 +203,13 @@ class GalaGopher(Plugin):
         """
         if probe.get('name', "") in probe_status and probe_status[probe['name']] != 'auto':
             return True
-        elif probe.get('name', "") in probe_status and probe_status[
-            probe['name']] == 'auto' and 'start_check' in probe:
+        elif probe.get('name', "") in probe_status and probe_status[probe['name']] == 'auto' and 'start_check' in probe:
             return True
         return False
 
-    def __change_probe_status(self, probes: Tuple[libconf.AttrDict],
-                              gopher_probes_status: dict,
-                              res: dict) -> Tuple[dict, dict]:
+    def __change_probe_status(
+        self, probes: Tuple[libconf.AttrDict], gopher_probes_status: dict, res: dict
+    ) -> Tuple[dict, dict]:
         """
         to change gopher probe status
 
@@ -233,8 +229,7 @@ class GalaGopher(Plugin):
                 failure_list.pop(probe['name'])
         return res, failure_list
 
-    def change_items_status(self, gopher_probes_status: Dict[str, str]) \
-            -> Dict[str, List[str]]:
+    def change_items_status(self, gopher_probes_status: Dict[str, str]) -> Dict[str, List[str]]:
         """
         Change running status about probe
 

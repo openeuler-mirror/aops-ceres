@@ -32,49 +32,22 @@ class StatusCode:
     """
     status code with related message
     """
+
     mapping = {
-        SUCCESS: {
-            'msg': 'operate success'
-        },
-        FILE_CORRUPTED: {
-            'msg': 'file structure corrupted'
-        },
-        PARTIAL_SUCCEED: {
-            'msg': 'request partial succeed'
-        },
-        FILE_NOT_FOUND: {
-            'msg': 'file not found'
-        },
-        PARAM_ERROR: {
-            'msg': 'parameter error'
-        },
-        HTTP_CONNECT_ERROR: {
-            'msg': 'url connection error'
-        },
-        UNKNOWN_ERROR: {
-            "msg": "unknown error"
-        },
-        TOKEN_ERROR: {
-            "msg": "the session is invalid"
-        },
-        SERVICE_NOT_EXIST: {
-            "msg": "the service is not found"
-        },
-        REPO_CONTENT_INCORRECT: {
-            "msg": "repo content cannot parse by yum"
-        },
-        REPO_NOT_SET: {
-            "msg": "repo source named aops-update is not set"
-        },
-        NO_COMMAND: {
-            "msg": "command not found"
-        },
-        NOT_PATCH: {
-            "msg": "no valid hot patch is matched"
-        },
-        COMMAND_EXEC_ERROR: {
-            "msg": "the input command is incorrect"
-        }
+        SUCCESS: {'msg': 'operate success'},
+        FILE_CORRUPTED: {'msg': 'file structure corrupted'},
+        PARTIAL_SUCCEED: {'msg': 'request partial succeed'},
+        FILE_NOT_FOUND: {'msg': 'file not found'},
+        PARAM_ERROR: {'msg': 'parameter error'},
+        HTTP_CONNECT_ERROR: {'msg': 'url connection error'},
+        UNKNOWN_ERROR: {"msg": "unknown error"},
+        TOKEN_ERROR: {"msg": "the session is invalid"},
+        SERVICE_NOT_EXIST: {"msg": "the service is not found"},
+        REPO_CONTENT_INCORRECT: {"msg": "repo content cannot parse by yum"},
+        REPO_NOT_SET: {"msg": "repo source named aops-update is not set"},
+        NO_COMMAND: {"msg": "command not found"},
+        NOT_PATCH: {"msg": "no valid hot patch is matched"},
+        COMMAND_EXEC_ERROR: {"msg": "the input command is incorrect"},
     }
 
     @classmethod

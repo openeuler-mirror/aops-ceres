@@ -24,14 +24,15 @@ from ceres.function.schema import (
     CVE_SCAN_SCHEMA,
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
-    STRING_ARRAY
+    STRING_ARRAY,
 )
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import (
     convert_string_to_json,
     get_dict_from_file,
-    plugin_status_judge, update_ini_data_value,
-    validate_data
+    plugin_status_judge,
+    update_ini_data_value,
+    validate_data,
 )
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
@@ -88,10 +89,7 @@ def change_collect_items(collect_items_status: dict) -> dict:
             dict: e.g
                 {"success": [], "failure":[items1, items2, ...]}
         """
-        return {
-            'success': [],
-            'failure': list(collect_items_status.get(plugin_name).keys())
-        }
+        return {'success': [], 'failure': list(collect_items_status.get(plugin_name).keys())}
 
     res = {}
     for plugin_name in collect_items_status.keys():
@@ -109,8 +107,7 @@ def change_collect_items(collect_items_status: dict) -> dict:
         if hasattr(plugin_manage, plugin_class_name):
             plugin = getattr(plugin_manage, plugin_class_name)
             if hasattr(plugin, 'change_items_status'):
-                res[plugin_name] = plugin().change_items_status(
-                    collect_items_status[plugin_name])
+                res[plugin_name] = plugin().change_items_status(collect_items_status[plugin_name])
         else:
             LOGGER.warning(f'{plugin_name} is not supported by collect items')
             res[plugin_name] = generate_failed_result(plugin_name)
@@ -176,7 +173,7 @@ def cve_command_manage(args):
             "unfixed_cves": cve_scan_info["unfixed_cves"],
             "fixed_cves": cve_scan_info["fixed_cves"],
             "os_version": Collect.get_system_info(),
-            "installed_packages": Collect.get_installed_packages()
+            "installed_packages": Collect.get_installed_packages(),
         }
         print(json.dumps(StatusCode.make_response_body((status_code, {"result": result}))))
     elif args.fix:
