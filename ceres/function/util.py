@@ -13,20 +13,19 @@
 import configparser
 import json
 import os
+import shlex
 import subprocess
-from typing import Union, List, Any, Dict, NoReturn
+from typing import Union, List, Any, Tuple, NoReturn
 from subprocess import Popen, PIPE, STDOUT
 
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
 
-from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE
+from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE, CommandExitCode
 from ceres.function.log import LOGGER
 from ceres.models.custom_exception import InputError
 from ceres.function.schema import STRING_ARRAY
 from ceres.function.status import PARAM_ERROR
-
-FAIL = 255
 
 
 def load_conf(file_path: str) -> configparser.RawConfigParser:
@@ -67,6 +66,60 @@ def validate_data(data: Any, schema: dict) -> bool:
         return False
 
 
+def execute_shell_command(command: str, **kwargs) -> Tuple[int, str, str]:
+    """
+    execute shell commands
+
+    Args:
+        command(str): shell command which needs to execute
+        **kwargs: keyword arguments, it is used to create Popen object.supported options: env, cwd, bufsize, group and
+        so on. you can see more options information in annotation of Popen obejct.
+
+    Returns:
+        Tuple[int, str, str]
+        a tuple containing three elements (return code, standard output, standard error).
+
+    Example usage:
+    >>> return_code, stdout, stderr = execute_shell_command("ls -al|wc -l", **{"env": {"LANG": "en_US.utf-8"}})
+    >>> print(return_code, stdout, stderr)
+    0, 42, ""
+    """
+    commands = command.split('|')
+    process = None
+    stdout_data = ""
+    stderr_data = ""
+
+    try:
+        for index, cmd in enumerate(commands):
+            cmd_list = shlex.split(cmd)
+            if index == 0:
+                process = subprocess.Popen(
+                    cmd_list,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    encoding='utf-8',
+                    **kwargs,
+                )
+            else:
+                process = subprocess.Popen(
+                    cmd_list,
+                    stdin=process.stdout,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    encoding='utf-8',
+                    **kwargs,
+                )
+        stdout, stderr = process.communicate()
+        stderr_data += stderr
+        stdout_data += stdout
+        return process.returncode, stdout_data.strip(), stderr_data.strip()
+
+    except Exception as error:
+        LOGGER.error(error)
+        return CommandExitCode.FAIL, stdout_data, str(error)
+
+
 def get_shell_data(command_list: List[str], key: bool = True, env=None, stdin: Popen = None) -> Union[str, Popen]:
     """
     execute shell commands
@@ -102,7 +155,7 @@ def cmd_output(cmd):
         result.wait()
         return result.stdout.read().decode('utf-8'), result.returncode
     except Exception as e:
-        return str(e), FAIL
+        return str(e), CommandExitCode.Fail
 
 
 def load_gopher_config(gopher_config_path: str) -> AttrDict:
