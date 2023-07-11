@@ -17,9 +17,9 @@ from unittest import mock
 
 from libconf import AttrDict
 
-from ceres.function.status import SUCCESS, SERVICE_NOT_EXIST
+from ceres.conf.constant import CommandExitCode
+from ceres.function.status import SUCCESS, FAIL
 from ceres.manages.plugin_manage import Plugin, GalaGopher
-from ceres.models.custom_exception import InputError
 
 target_probes = (
     AttrDict([('name', 'test_no_check_1'), ('command', 'test'), ('param', ''), ('switch', 'on')]),
@@ -68,71 +68,63 @@ target_probes = (
 
 
 class TestPluginManage(unittest.TestCase):
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_start_service_should_return_success_when_plugin_is_already_running(self, mock_shell_data, mock_popen):
-        mock_return_value = "test-res-running"
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, mock_return_value]
-        res = Plugin('test').start_service()
-        self.assertEqual(SUCCESS, res)
-
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_start_service_should_return_success_when_make_plugin_running_successful(self, mock_shell_data, mock_popen):
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, '', 'active']
-        res = Plugin('test').start_service()
-        self.assertEqual(SUCCESS, res)
-
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_start_service_should_return_service_not_exist_when_plugin_is_not_installed(
-        self, mock_shell_data, mock_popen
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    @mock.patch.object(Plugin, 'get_plugin_status')
+    def test_start_service_should_return_success_when_plugin_is_already_running(
+        self, mock_plugin_status, mock_execute_shell_command
     ):
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, '', 'service not found']
-        res = Plugin('test').start_service()
-        self.assertEqual(SERVICE_NOT_EXIST, res)
+        mock_plugin_status.return_value = "running"
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, "", ""
+        self.assertEqual(SUCCESS, Plugin('test').start_service())
 
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_start_service_should_return_service_not_exist_when_host_has_no_command(self, mock_shell_data):
-        mock_shell_data.side_effect = InputError('')
-        res = Plugin('test').start_service()
-        self.assertEqual(SERVICE_NOT_EXIST, res)
-
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_stop_service_should_return_success_when_plugin_is_already_stopping(self, mock_shell_data, mock_popen):
-        mock_return_value = "test-res-inactive"
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, mock_return_value]
-        res = Plugin('test').stop_service()
-        self.assertEqual(SUCCESS, res)
-
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_stop_service_should_return_success_when_make_plugin_running_successful(self, mock_shell_data, mock_popen):
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, '', 'inactive']
-        res = Plugin('test').stop_service()
-        self.assertEqual(SUCCESS, res)
-
-    @mock.patch.object(subprocess, 'Popen')
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_stop_service_should_return_service_not_exist_when_plugin_is_not_installed(
-        self, mock_shell_data, mock_popen
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    @mock.patch.object(Plugin, 'get_plugin_status')
+    def test_start_service_should_return_success_when_make_plugin_running_successful(
+        self, mock_plugin_status, mock_execute_shell_command
     ):
-        mock_popen.stdout.return_value = None
-        mock_shell_data.side_effect = [subprocess.Popen, '', 'service not found']
-        res = Plugin('test').stop_service()
-        self.assertEqual(SERVICE_NOT_EXIST, res)
+        mock_plugin_status.return_value = "active"
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, "", ""
+        self.assertEqual(SUCCESS, Plugin('test').start_service())
 
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_stop_service_should_return_service_not_exist_when_host_has_no_command(self, mock_shell_data):
-        mock_shell_data.side_effect = InputError('')
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    @mock.patch.object(Plugin, 'get_plugin_status')
+    def test_start_service_should_return_fail_when_execute_shell_command_failed(
+        self, mock_plugin_status, mock_execute_shell_command
+    ):
+        mock_plugin_status.return_value = "active"
+        mock_execute_shell_command.return_value = CommandExitCode.FAIL, "", ""
+        self.assertEqual(FAIL, Plugin('test').start_service())
+
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    def test_get_plugin_status_should_return_plugin_status_when_execute_shell_command_successful(
+        self, mock_execute_shell_command
+    ):
+        mock_shell_stdout = " Active: failed (Result: exit-code) since Mon 2023-07-03 15:57:07 CST; 24h ago"
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, mock_shell_stdout, ""
+        self.assertEqual("failed", Plugin('test').get_plugin_status())
+
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    def test_get_plugin_status_should_return_empty_string_when_execute_shell_command_failed(
+        self, mock_execute_shell_command
+    ):
+        mock_execute_shell_command.return_value = CommandExitCode.FAIL, "", ""
+        self.assertEqual("", Plugin('test').get_plugin_status())
+
+    @mock.patch.object(Plugin, 'get_plugin_status')
+    def test_stop_service_should_return_success_when_plugin_is_already_stopping(self, mock_plugin_status):
+        mock_plugin_status.return_value = "inactive"
         res = Plugin('test').stop_service()
-        self.assertEqual(SERVICE_NOT_EXIST, res)
+        self.assertEqual(SUCCESS, res)
+
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    @mock.patch.object(Plugin, 'get_plugin_status')
+    def test_stop_service_should_return_success_when_execute_shell_command_successful(
+        self, mock_plugin_status, mock_execute_shell_command
+    ):
+        mock_plugin_status.return_value = "running"
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, "", ""
+        res = Plugin('test').stop_service()
+        self.assertEqual(SUCCESS, res)
 
     def test_change_probe_status_should_return_success_list_and_empty_failure_list_when_input_all_right(self):
         probe_status = {
@@ -290,46 +282,26 @@ class TestPluginManage(unittest.TestCase):
         res = Plugin.get_installed_plugin()
         self.assertEqual([], res)
 
-    @mock.patch.object(mock.Mock, 'stdout', create=True)
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_get_pid_should_return_pid_string_when_all_is_right(self, mock_shell, mock_stdout):
-        mock_shell.side_effect = (mock.Mock, 'Main PID: 749')
-        mock_stdout.return_value = None
-        mock_shell.stdout.return_value = ''
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    def test_get_pid_should_return_pid_string_when_all_is_right(self, mock_execute_shell_command):
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, 'Main PID: 749', ""
         res = Plugin.get_pid('')
         self.assertEqual('749', res)
 
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_get_pid_should_return_empty_string_when_command_execution_failed(self, mock_shell):
-        mock_shell.side_effect = InputError('')
+    @mock.patch('ceres.manages.plugin_manage.execute_shell_command')
+    def test_get_pid_should_return_empty_string_when_command_execution_failed(self, mock_execute_shell_command):
+        mock_execute_shell_command.return_value = CommandExitCode.FAIL, "", ""
         res = Plugin.get_pid('')
-        self.assertEqual('', res)
-
-    @mock.patch.object(mock.Mock, 'stdout', create=True)
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_get_plugin_status_should_return_plugin_status_when_all_is_right(self, mock_shell, mock_stdout):
-        mock_shell.side_effect = (mock.Mock, 'Active: active (running)')
-        mock_stdout.return_value = None
-        mock_shell.stdout.return_value = ''
-        res = Plugin('').get_plugin_status()
-        self.assertEqual('active', res)
-
-    @mock.patch('ceres.manages.plugin_manage.get_shell_data')
-    def test_get_plugin_status_should_return_empty_string_when_command_execution_failed(self, mock_shell):
-        mock_shell.side_effect = InputError('')
-        res = Plugin('').get_plugin_status()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
     def test_get_collect_items_should_return_empty_set_when_gopher_config_is_empty(self, mock_gopher_config):
-
         mock_gopher_config.return_value = AttrDict()
         res = GalaGopher.get_collect_items()
         self.assertEqual(set(), res)
 
     @mock.patch('ceres.manages.plugin_manage.load_gopher_config')
     def test_get_collect_items_should_return_collect_items_when_load_gopher_config_succeed(self, mock_gopher_config):
-
         mock_gopher_config.return_value = AttrDict(
             [
                 (

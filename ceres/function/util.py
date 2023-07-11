@@ -15,16 +15,13 @@ import json
 import os
 import shlex
 import subprocess
-from typing import Union, List, Any, Tuple, NoReturn
-from subprocess import Popen, PIPE, STDOUT
+from typing import Any, Tuple, NoReturn
 
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
 
 from ceres.conf.constant import INFORMATION_ABOUT_RPM_SERVICE, CommandExitCode
 from ceres.function.log import LOGGER
-from ceres.models.custom_exception import InputError
-from ceres.function.schema import STRING_ARRAY
 from ceres.function.status import PARAM_ERROR
 
 
@@ -120,44 +117,6 @@ def execute_shell_command(command: str, **kwargs) -> Tuple[int, str, str]:
         return CommandExitCode.FAIL, stdout_data, str(error)
 
 
-def get_shell_data(command_list: List[str], key: bool = True, env=None, stdin: Popen = None) -> Union[str, Popen]:
-    """
-    execute shell commands
-
-    Args:
-        command_list( List[str] ): a list containing the command arguments.
-        key (bool): Boolean value
-        stdin (Popen): Popen object
-        env (Dict[str, str]): temporary environment variables
-
-    Returns:
-        get str result when execute shell command success and the key is True or
-        get Popen object when execute shell command success and the key is False
-
-    Raises:
-        FileNotFoundError: linux has no this command
-    """
-    if validate_data(command_list, STRING_ARRAY) is False:
-        raise InputError('please check your command')
-    try:
-        res = Popen(command_list, stdout=PIPE, stdin=stdin, stderr=STDOUT, env=env)
-    except FileNotFoundError as e:
-        raise InputError('linux has no command') from e
-
-    if key:
-        return res.stdout.read().decode()
-    return res
-
-
-def cmd_output(cmd):
-    try:
-        result = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result.wait()
-        return result.stdout.read().decode('utf-8'), result.returncode
-    except Exception as e:
-        return str(e), CommandExitCode.Fail
-
-
 def load_gopher_config(gopher_config_path: str) -> AttrDict:
     """
     get AttrDict from config file
@@ -190,25 +149,15 @@ def plugin_status_judge(plugin_name: str) -> str:
     Returns:
         str: plugin running status
     """
-    if plugin_name in INFORMATION_ABOUT_RPM_SERVICE.keys():
-        service_name = INFORMATION_ABOUT_RPM_SERVICE.get(plugin_name).get('service_name')
-        if service_name is None:
-            LOGGER.warning(
-                f"Fail to get service name about {plugin_name}," f"please check that the project file is complete."
-            )
-            return ""
-    else:
-        LOGGER.debug(f'Input plugin {plugin_name} is not supported, ' f'please check and try again')
+    service_name = INFORMATION_ABOUT_RPM_SERVICE.get(plugin_name, {}).get('service_name')
+    if service_name is None:
+        LOGGER.warning(f"Fail to get service name about {plugin_name}")
         return ""
+    return_code, stdout, _ = execute_shell_command(f"systemctl status {service_name}|grep Active")
 
-    try:
-        status_info = get_shell_data(["systemctl", "status", service_name], key=False)
-        res = get_shell_data(["grep", "Active"], stdin=status_info.stdout)
-        status_info.stdout.close()
-    except InputError:
-        LOGGER.error(f'Get service {service_name} status error!')
-        return ""
-    return res
+    if return_code == CommandExitCode.SUCCEED:
+        return stdout
+    return ""
 
 
 def get_dict_from_file(file_path: str) -> dict:

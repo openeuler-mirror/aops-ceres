@@ -18,8 +18,14 @@ from unittest import mock
 
 import libconf
 
-from ceres.function.util import load_gopher_config, plugin_status_judge, get_dict_from_file, update_ini_data_value
-from ceres.models.custom_exception import InputError
+from ceres.conf.constant import CommandExitCode
+from ceres.function.util import (
+    load_gopher_config,
+    plugin_status_judge,
+    get_dict_from_file,
+    update_ini_data_value,
+    execute_shell_command,
+)
 
 
 class TestUtil(unittest.TestCase):
@@ -38,14 +44,11 @@ class TestUtil(unittest.TestCase):
     },
     );'''
 
-    @mock.patch.object(mock.Mock, 'stdout', create=True)
-    @mock.patch('ceres.function.util.get_shell_data')
+    @mock.patch('ceres.function.util.execute_shell_command')
     @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {"mock": {"service_name": "mock"}})
-    def test_plugin_status_judge_should_return_plugin_status_when_all_is_right(self, mock_shell, mock_stdout):
+    def test_plugin_status_judge_should_return_plugin_status_when_all_is_right(self, mock_shell):
         mock_status_string = 'Active: active (running)'
-        mock_shell.side_effect = (mock.Mock, mock_status_string)
-        mock_stdout.return_value = None
-        mock_shell.stdout.return_value = ''
+        mock_shell.return_value = CommandExitCode.SUCCEED, mock_status_string, ""
         res = plugin_status_judge('mock')
         self.assertEqual(mock_status_string, res)
 
@@ -59,10 +62,10 @@ class TestUtil(unittest.TestCase):
         res = plugin_status_judge('mock')
         self.assertEqual('', res)
 
-    @mock.patch('ceres.function.util.get_shell_data')
+    @mock.patch('ceres.function.util.execute_shell_command')
     @mock.patch('ceres.function.util.INFORMATION_ABOUT_RPM_SERVICE', {"mock": {"service_name": "mock"}})
     def test_plugin_status_judge_should_return_empty_string_when_command_execution_failed(self, mock_shell):
-        mock_shell.side_effect = InputError('')
+        mock_shell.return_value = CommandExitCode.FAIL, "", ""
         res = plugin_status_judge('mock')
         self.assertEqual('', res)
 

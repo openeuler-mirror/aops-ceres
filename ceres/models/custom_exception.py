@@ -10,19 +10,6 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-class InputError(Exception):
-    """
-    Custom Exception
-    """
-
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
 class NoCommandError(Exception):
     """
     Custom Exception
