@@ -24,12 +24,12 @@ from ceres.conf.constant import (
     INSTALLABLE_PLUGIN,
     PLUGIN_WITH_CLASS,
     SCANNED_APPLICATION,
+    CommandExitCode,
 )
 from ceres.function.log import LOGGER
-from ceres.function.util import get_shell_data, plugin_status_judge
+from ceres.function.util import execute_shell_command, plugin_status_judge
 from ceres.manages import plugin_manage
 from ceres.manages.resource_manage import Resource
-from ceres.models.custom_exception import InputError
 
 
 class Collect:
@@ -97,20 +97,16 @@ class Collect:
         return host_info
 
     @staticmethod
-    def get_system_info() -> str:
+    def get_os_version() -> str:
         """
             get system name and its version
 
         Returns:
             str: e.g openEuler 21.09
         """
-        try:
-            os_data = get_shell_data(['cat', '/etc/os-release'])
-        except InputError:
-            LOGGER.error('Failed to get system version info,linux has no command!')
-            return ''
+        _, stdout, _ = execute_shell_command("cat /etc/os-release")
+        res = re.search('(?=PRETTY_NAME=).+', stdout)
 
-        res = re.search('(?=PRETTY_NAME=).+', os_data)
         if res:
             return res.group()[12:].strip('"').replace(' ', '-')
         LOGGER.warning('Failed to get os version info, ' 'please check file /etc/os-release and try it again')
@@ -128,7 +124,7 @@ class Collect:
                 }
         """
         res = {
-            'os_version': self.get_system_info(),
+            'os_version': self.get_os_version(),
             'bios_version': self.__get_bios_version(),
             'kernel': self.__get_kernel_version(),
         }
@@ -142,14 +138,9 @@ class Collect:
         Returns:
             str
         """
-        try:
-            bios_data = get_shell_data(['dmidecode', '-t', 'bios'])
-        except InputError:
-            LOGGER.error('Failed to get system info,linux has no command dmidecode!')
-            return ''
+        _, stdout, _ = execute_shell_command("dmidecode -t bios")
 
-        res = re.search('(?=Version:).+', bios_data)
-
+        res = re.search('(?=Version:).+', stdout)
         if res:
             return res.group()[8:].strip()
         LOGGER.warning('Failed to get bios version, please check dmidecode and try it again')
@@ -163,12 +154,9 @@ class Collect:
         Returns:
             str
         """
-        try:
-            kernel_data = get_shell_data(['uname', '-r'])
-        except InputError:
-            LOGGER.error('Failed to get kernel version info,linux has no command!')
-            return ''
-        res = re.search(r'[\d\.]+-[\d\.]+[\d]', kernel_data)
+        _, stdout, _ = execute_shell_command("dmidecode -t bios")
+
+        res = re.search(r'[\d\.]+-[\d\.]+[\d]', stdout)
         if res:
             return res.group()
         LOGGER.warning('Failed to get kernel version, please check dmidecode and try it again')
@@ -192,13 +180,10 @@ class Collect:
                     "l3_cache": string
                 }
         """
-        try:
-            lscpu_data = get_shell_data(['lscpu'], env={"LANG": "en_US.utf-8"})
-        except InputError:
-            LOGGER.error('Failed to get cpu info,linux has no command lscpu or grep.')
-            return {}
+        _, stdout, _ = execute_shell_command("lscpu", **{"env": {"LANG": "en_US.utf-8"}})
 
-        info_list = re.findall('.+:.+', lscpu_data)
+        info_list = re.findall('.+:.+', stdout)
+
         if not info_list:
             LOGGER.warning('Failed to read cpu info by lscpu, please check it and try again.')
 
@@ -228,13 +213,9 @@ class Collect:
         Returns:
             str: memory size
         """
-        try:
-            lsmem_data = get_shell_data(['lsmem'])
-        except InputError:
-            LOGGER.error('Failed to get  host memory info, Linux has no command dmidecode')
-            return ''
+        _, stdout, _ = execute_shell_command("lsmem")
 
-        res = re.search("(?=Total online memory:).+", lsmem_data)
+        res = re.search("(?=Total online memory:).+", stdout)
         if res:
             return res.group()[20:].strip()
         LOGGER.warning('Failed to get total online memory, please check lsmem and try it again')
@@ -261,22 +242,32 @@ class Collect:
                 }
 
         """
-        res = {}
-        if self.__get_total_online_memory():
-            res['size'] = self.__get_total_online_memory()
+        res = {'size': self.__get_total_online_memory() or None, "total": None, "info": []}
 
-        try:
-            memory_data = get_shell_data(['dmidecode', '-t', 'memory']).split('Memory Device')
-        except InputError:
-            LOGGER.error('Failed to get host memory info, Linux has no command dmidecode')
-            return res
+        code, memory_data, _ = execute_shell_command("dmidecode -t memory")
 
-        if len(memory_data) == 1:
+        # dmidecode -t memory
+        # e.g
+        # dmidecode 3.2
+        # Getting SMBIOS data from sysfs.
+        # SMBIOS 2.8 present.
+        #
+        # Physical Memory Array
+        #       Location: Other
+        #       Use: System Memory
+        #       ...
+        # Memory Device
+        #       Array Handle
+        #       ...
+        # Memory Device
+        #       Array Handle
+        #       ...
+        if code != CommandExitCode.SUCCEED or len(memory_data.split('Memory Device')) == 1:
             LOGGER.warning('Failed to read memory info by dmidecode')
             return res
 
         info = []
-        for module in memory_data:
+        for module in memory_data.split('Memory Device'):
             module_info_list = re.findall('.+:.+', module)
 
             module_info_dict = {}
@@ -314,15 +305,14 @@ class Collect:
                     }
                 ]
         """
-        try:
-            lshw_data = get_shell_data(['lshw', '-json', '-c', 'disk'])
-        except InputError:
-            LOGGER.error('Failed to get hard disk info, Linux has no command lshw')
+        code, stdout, _ = execute_shell_command("lshw -json -c disk")
+        if code != CommandExitCode.SUCCEED:
+            LOGGER.error(stdout)
             return []
 
         # Convert the command result to a json string
         # lshw_data e.g  "{...},{...},{...}"
-        lshw_data = f"[{lshw_data}]"
+        lshw_data = f"[{stdout}]"
 
         try:
             disk_info_list = json.loads(lshw_data)
@@ -386,15 +376,10 @@ class Collect:
         Returns:
             uuid(str)
         """
-        try:
-            fstab_info = get_shell_data(['dmidecode'], key=False)
-            uuid_info = get_shell_data(['grep', 'UUID'], stdin=fstab_info.stdout)
-            fstab_info.stdout.close()
-        except InputError:
-            LOGGER.error(f'Failed to get system uuid!')
-            return ""
-        uuid = uuid_info.replace("-", "").split(':')[1].strip()
-        return uuid
+        code, stdout, _ = execute_shell_command("dmidecode|grep UUID")
+        if code == CommandExitCode.SUCCEED:
+            return stdout.replace("-", "").split(':')[1].strip()
+        return ""
 
     @staticmethod
     def get_host_ip() -> str:
@@ -426,15 +411,14 @@ class Collect:
                     "version": "4.19.90-2022.1.1"
                 }]
         """
-        try:
-            package_info = get_shell_data(['rpm', '-qai'], key=False)
-            pkg_src_name = get_shell_data(["grep", "Source RPM"], stdin=package_info.stdout)
-        except InputError:
+
+        code, source_name_info, _ = execute_shell_command("rpm -qai|grep .src.rpm")
+        if code != CommandExitCode.SUCCEED:
             LOGGER.error("Failed to query installed packages.")
             return []
 
         package_info_dict = {}
-        for package_source_name in pkg_src_name.splitlines():
+        for package_source_name in source_name_info.splitlines():
             package_info = package_source_name.rsplit("-", 2)
             if len(package_info) == 1:
                 continue

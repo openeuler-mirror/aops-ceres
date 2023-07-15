@@ -11,6 +11,7 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 SUCCESS = "Succeed"
+FAIL = "Fail"
 FILE_CORRUPTED = "File.Structure.Corrupted"
 PARTIAL_SUCCEED = "Partial.Succeed"
 FILE_NOT_FOUND = "File.Not.Found"

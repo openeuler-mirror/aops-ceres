@@ -13,10 +13,9 @@
 import configparser
 import os
 
-from ceres.conf.constant import BASE_SERVICE_PATH
+from ceres.conf.constant import BASE_SERVICE_PATH, CommandExitCode
 from ceres.function.log import LOGGER
-from ceres.models.custom_exception import InputError
-from ceres.function.util import load_conf, get_shell_data
+from ceres.function.util import load_conf, execute_shell_command
 
 
 class Resource:
@@ -33,15 +32,11 @@ class Resource:
         Returns:
             str:The memory value which has used
         """
-        try:
-            memory_info = get_shell_data(["cat", f"/proc/{pid}/status"], key=False)
-            memory = get_shell_data(["grep", "VmRSS"], stdin=memory_info.stdout).split(":")[1].strip()
-            memory_info.stdout.close()
-
-        except InputError:
-            LOGGER.error(f'Failed to get memory info of process {pid}!')
-            return ''
-        return memory
+        code, stdout, _ = execute_shell_command(f"cat /proc/{pid}/status|grep VmRSS")
+        if code == CommandExitCode.SUCCEED:
+            return stdout.split(":")[1].strip()
+        LOGGER.error(f'Failed to get memory info of process {pid}!')
+        return ""
 
     @classmethod
     def get_memory_limit(cls, rpm_name: str) -> str:
@@ -64,7 +59,8 @@ class Resource:
             memory_high = config.get("Service", "MemoryHigh")
         except configparser.NoOptionError:
             LOGGER.warning(
-                f'There is no option "MemoryHigh" in section "Service" in file {service_path},please check and try again.'
+                'There is no option "MemoryHigh" in section "Service"'
+                f' in file {service_path},please check and try again.'
             )
             memory_high = None
         except configparser.NoSectionError:
@@ -72,8 +68,8 @@ class Resource:
             memory_high = None
         return memory_high
 
-    @classmethod
-    def get_current_cpu(cls, rpm_name: str, pid: str) -> str:
+    @staticmethod
+    def get_current_cpu(rpm_name: str, pid: str) -> str:
         """
         Get cpu usage by process id
 
@@ -84,25 +80,14 @@ class Resource:
         Returns:
             str: cpu usage
         """
-        try:
-            all_status_info = get_shell_data(["ps", "aux"], key=False)
-            plugin_process_info = get_shell_data(["grep", "-w", f"{rpm_name}"], stdin=all_status_info.stdout, key=False)
-            all_status_info.stdout.close()
+        code, stdout, _ = execute_shell_command(f"ps -aux|grep -w {rpm_name}|grep {pid}|awk {{print$3}}")
+        if code == CommandExitCode.SUCCEED:
+            return f'{stdout.strip()}%'
+        LOGGER.error(f'Failed to get plugin cpu info about {rpm_name}.')
+        return ''
 
-            plugin_main_pid_process_info = get_shell_data(
-                ["grep", f"{pid}"], stdin=plugin_process_info.stdout, key=False
-            )
-            cpu_usage = get_shell_data(["awk", "{print $3}"], stdin=plugin_main_pid_process_info.stdout)
-            plugin_main_pid_process_info.stdout.close()
-
-        except InputError:
-            LOGGER.error(f'Failed to get plugin cpu info about {rpm_name}.')
-            return ''
-
-        return f'{cpu_usage.strip()}%'
-
-    @classmethod
-    def get_cpu_limit(cls, rpm_name: str) -> str:
+    @staticmethod
+    def get_cpu_limit(rpm_name: str) -> str:
         """
         get limit cpu from plugin service file
 

@@ -11,84 +11,107 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import configparser
-import unittest
-from unittest import mock
+import os
 
-from ceres.manages.resource_manage import Resource
-from ceres.models.custom_exception import InputError
+from ceres.conf.constant import BASE_SERVICE_PATH, CommandExitCode
+from ceres.function.log import LOGGER
+from ceres.function.util import load_conf, execute_shell_command
 
 
-class TestResourceManage(unittest.TestCase):
-    @mock.patch.object(mock.Mock, 'stdout', create=True)
-    @mock.patch('ceres.manages.resource_manage.get_shell_data')
-    def test_get_current_memory_should_return_current_value_when_all_is_right(self, mock_shell, mock_stdout):
-        mock_shell.side_effect = (mock.Mock, 'VmRSS: 2333 kB')
-        mock_stdout.return_value = None
-        mock_shell.stdout.return_value = ''
-        res = Resource.get_current_memory('')
-        self.assertEqual('2333 kB', res)
+class Resource:
+    """
+    Get cpu and memory info
+    """
 
-    @mock.patch('ceres.manages.resource_manage.get_shell_data')
-    def test_get_current_memory_should_return_empty_str_when_command_execution_failed(self, mock_shell):
-        mock_shell.side_effect = InputError('')
-        res = Resource.get_current_memory('')
-        self.assertEqual('', res)
+    @classmethod
+    def get_current_memory(cls, pid: str) -> str:
+        """
+        Get memory value which plugin has used
+        Args:
+            pid(str): main process id about running plugin
+        Returns:
+            str:The memory value which has used
+        """
+        code, stdout, _ = execute_shell_command(f"cat /proc/{pid}/status|grep VmRSS")
+        if code == CommandExitCode.SUCCEED:
+            return stdout.split(":")[1].strip()
+        LOGGER.error(f'Failed to get memory info of process {pid}!')
+        return ""
 
-    @mock.patch.object(mock.Mock, 'stdout', create=True)
-    @mock.patch('ceres.manages.resource_manage.get_shell_data')
-    def test_get_current_cpu_should_return_current_value_when_all_is_right(self, mock_shell, mock_stdout):
-        mock_shell.side_effect = (mock.Mock, mock.Mock, mock.Mock, '20')
-        mock_stdout.return_value = None
-        mock_shell.stdout.return_value = ''
-        res = Resource.get_current_cpu('', '')
-        self.assertEqual('20%', res)
+    @classmethod
+    def get_memory_limit(cls, rpm_name: str) -> str:
+        """
+        Get MemoryHigh value from service file
 
-    @mock.patch('ceres.manages.resource_manage.get_shell_data')
-    def test_get_current_cpu_should_return_current_value_when_command_execution_failed(self, mock_shell):
-        mock_shell.side_effect = InputError('')
-        res = Resource.get_current_cpu('', '')
-        self.assertEqual('', res)
+        Args:
+            rpm_name (str): rpm package name
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_cpu_limit_should_return_cpu_limit_value_when_all_is_right(self, mock_load_conf):
-        parser = configparser.RawConfigParser()
-        parser.read_dict({"Service": {'CPUQuota': '20%'}})
-        mock_load_conf.return_value = parser
-        res = Resource.get_cpu_limit('')
-        self.assertEqual('20%', res)
+        Returns:
+            str: memory_high values.
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_cpu_limit_should_return_null_when_config_file_has_no_section_service(self, mock_load_conf):
-        mock_load_conf.return_value = configparser.RawConfigParser()
-        res = Resource.get_cpu_limit('')
-        self.assertEqual(None, res)
+        Raises:
+            NoOptionError: The service section has no option "MemoryHigh"
+            NoSectionError: Service file has no section "Service"
+        """
+        service_path = os.path.join(BASE_SERVICE_PATH, f"{rpm_name}.service")
+        config = load_conf(service_path)
+        try:
+            memory_high = config.get("Service", "MemoryHigh")
+        except configparser.NoOptionError:
+            LOGGER.warning(
+                'There is no option "MemoryHigh" in section "Service"'
+                f' in file {service_path},please check and try again.'
+            )
+            memory_high = None
+        except configparser.NoSectionError:
+            LOGGER.warning(f'There is no section "Service" in file {service_path} ,' 'please check and try again.')
+            memory_high = None
+        return memory_high
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_cpu_limit_should_return_null_when_config_file_has_no_option_cpuquota(self, mock_load_conf):
-        parser = configparser.RawConfigParser()
-        parser.read_dict({"Service": {'mock': 'mock'}})
-        mock_load_conf.return_value = parser
-        res = Resource.get_cpu_limit('')
-        self.assertEqual(None, res)
+    @staticmethod
+    def get_current_cpu(rpm_name: str, pid: str) -> str:
+        """
+        Get cpu usage by process id
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_memory_limit_should_return_memory_limit_value_when_all_is_right(self, mock_load_conf):
-        parser = configparser.RawConfigParser()
-        parser.read_dict({"Service": {'MemoryHigh': '40M'}})
-        mock_load_conf.return_value = parser
-        res = Resource.get_memory_limit('')
-        self.assertEqual('40M', res)
+        Args:
+            rpm_name(str): rpm package name
+            pid(str): main process id about running plugin
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_memory_limit_should_return_null_when_has_no_section_service(self, mock_load_conf):
-        mock_load_conf.return_value = configparser.RawConfigParser()
-        res = Resource.get_memory_limit('')
-        self.assertEqual(None, res)
+        Returns:
+            str: cpu usage
+        """
+        code, stdout, _ = execute_shell_command(f"ps -aux|grep -w {rpm_name}|grep {pid}|awk {{print$3}}")
+        if code == CommandExitCode.SUCCEED:
+            return f'{stdout.strip()}%'
+        LOGGER.error(f'Failed to get plugin cpu info about {rpm_name}.')
+        return ''
 
-    @mock.patch('ceres.manages.resource_manage.load_conf')
-    def test_get_memory_limit_should_return_null_when_has_no_option_memory_high(self, mock_load_conf):
-        parser = configparser.RawConfigParser()
-        parser.read_dict({"Service": {'mock': 'mock'}})
-        mock_load_conf.return_value = parser
-        res = Resource.get_memory_limit('')
-        self.assertEqual(None, res)
+    @staticmethod
+    def get_cpu_limit(rpm_name: str) -> str:
+        """
+        get limit cpu from plugin service file
+
+        Args:
+            rpm_name (str): rpm package name
+
+        Returns:
+            str: cpu limit value
+
+        Raises:
+            NoOptionError: The service section has no option "CPUQuota"
+            NoSectionError: Service file has no section "Service"
+        """
+        service_path = os.path.join(BASE_SERVICE_PATH, f"{rpm_name}.service")
+        config = load_conf(service_path)
+        try:
+            cpu_limit = config.get("Service", "CPUQuota")
+        except configparser.NoOptionError:
+            LOGGER.warning(
+                'There is no option "CPUQuota" in section "Service"'
+                f' in file {service_path},please check and try again.'
+            )
+            cpu_limit = None
+        except configparser.NoSectionError:
+            LOGGER.warning(f'There is no section "Service" in file {service_path} ,' 'please check and try again.')
+            cpu_limit = None
+        return cpu_limit
