@@ -323,8 +323,12 @@ class Collect:
         res = []
         if disk_info_list:
             for disk_info in disk_info_list:
-                tmp = {"model": disk_info.get('product'), "capacity": f"{disk_info.get('size', 0) // 10 ** 9}GB"}
-                res.append(tmp)
+                res.append(
+                    {
+                        "model": disk_info.get('description') or disk_info.get('product'),
+                        "capacity": f"{disk_info.get('size', 0) // 10 ** 9}GB",
+                    }
+                )
 
         return res
 
