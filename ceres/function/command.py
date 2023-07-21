@@ -170,8 +170,8 @@ def cve_command_manage(args):
             exit(1)
         status_code, cve_scan_info = VulnerabilityManage().cve_scan(data)
         result = {
-            "unfixed_cves": cve_scan_info["unfixed_cves"],
-            "fixed_cves": cve_scan_info["fixed_cves"],
+            "unfixed_cves": cve_scan_info.get("unfixed_cves", []),
+            "fixed_cves": cve_scan_info.get("fixed_cves", []),
             "os_version": Collect.get_system_info(),
             "installed_packages": Collect.get_installed_packages(),
         }

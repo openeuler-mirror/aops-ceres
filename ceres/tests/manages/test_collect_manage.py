@@ -451,7 +451,42 @@ class TestCollectManage(unittest.TestCase):
         self.assertEqual(expected_result, Collect().get_host_info(['os', 'disk']))
 
     @mock.patch('ceres.manages.collect_manage.execute_shell_command')
-    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed(self, mock_execute_shell_command):
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_and_only_contain_description(
+        self, mock_execute_shell_command
+    ):
+        mock_execute_shell_command.return_value = (
+            CommandExitCode.SUCCEED,
+            '{"description": "ATA Disk", "size": 42949672960}',
+            "",
+        )
+        self.assertEqual([{"model": "ATA Disk", "capacity": "42GB"}], Collect()._get_disk_info())
+
+    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_and_has_no_description_or_product(
+        self, mock_execute_shell_command
+    ):
+        mock_execute_shell_command.return_value = (
+            CommandExitCode.SUCCEED,
+            '{"size": 42949672960}',
+            "",
+        )
+        self.assertEqual([{"model": None, "capacity": "42GB"}], Collect()._get_disk_info())
+
+    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_and_contain_description_and_product(
+        self, mock_execute_shell_command
+    ):
+        mock_execute_shell_command.return_value = (
+            CommandExitCode.SUCCEED,
+            '{"description": "ATA Disk", "size": 42949672960,"product": "MOCK PRODUCT"}',
+            "",
+        )
+        self.assertEqual([{"model": "ATA Disk", "capacity": "42GB"}], Collect()._get_disk_info())
+
+    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
+    def test_get_disk_info_should_return_disk_info_when_shell_command_execute_succeed_and_only_contain_product(
+        self, mock_execute_shell_command
+    ):
         mock_execute_shell_command.return_value = (
             CommandExitCode.SUCCEED,
             '{"product": "MOCK PRODUCT", "size": 42949672960}',
