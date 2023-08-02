@@ -154,7 +154,7 @@ class Collect:
         Returns:
             str
         """
-        _, stdout, _ = execute_shell_command("dmidecode -t bios")
+        _, stdout, _ = execute_shell_command("uname -r")
 
         res = re.search(r'[\d\.]+-[\d\.]+[\d]', stdout)
         if res:
