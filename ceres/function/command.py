@@ -169,13 +169,17 @@ def cve_command_manage(args):
         if not validate_data(data, CVE_SCAN_SCHEMA):
             exit(1)
         status_code, cve_scan_info = VulnerabilityManage().cve_scan(data)
-        result = {
-            "unfixed_cves": cve_scan_info.get("unfixed_cves", []),
-            "fixed_cves": cve_scan_info.get("fixed_cves", []),
-            "os_version": Collect.get_system_info(),
-            "installed_packages": Collect.get_installed_packages(),
-        }
-        print(json.dumps(StatusCode.make_response_body((status_code, {"result": result}))))
+        print(
+            json.dumps(
+                {
+                    "check_items": cve_scan_info.get("check_items", []),
+                    "unfixed_cves": cve_scan_info.get("unfixed_cves", []),
+                    "fixed_cves": cve_scan_info.get("fixed_cves", []),
+                    "os_version": Collect.get_os_version(),
+                    "installed_packages": Collect.get_installed_packages(),
+                }
+            )
+        )
     elif args.fix:
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):

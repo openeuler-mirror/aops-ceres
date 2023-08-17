@@ -62,12 +62,8 @@ REPO_SET_SCHEMA = {
 
 CVE_SCAN_SCHEMA = {
     "type": "object",
-    "required": ["check", "check_items", "basic"],
-    "properties": {
-        "check_items": {"type": "array", "items": {"type": "string"}},
-        "check": {"enum": [True, False]},
-        "basic": {"enum": [True, False]},
-    },
+    "required": ["check_items"],
+    "properties": {"check_items": {"type": "array", "items": {"type": "string"}}},
 }
 
 CVE_FIX_SCHEMA = {
