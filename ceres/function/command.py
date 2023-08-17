@@ -14,7 +14,7 @@ import argparse
 import json
 from typing import NoReturn
 
-from ceres.conf.constant import CERES_CONFIG_PATH, INSTALLABLE_PLUGIN, PLUGIN_WITH_CLASS
+from ceres.conf.constant import INSTALLABLE_PLUGIN, PLUGIN_WITH_CLASS
 from ceres.function.log import LOGGER
 from ceres.function.register import register, register_info_to_dict
 from ceres.function.schema import (
@@ -27,13 +27,7 @@ from ceres.function.schema import (
     STRING_ARRAY,
 )
 from ceres.function.status import SUCCESS, StatusCode
-from ceres.function.util import (
-    convert_string_to_json,
-    get_dict_from_file,
-    plugin_status_judge,
-    update_ini_data_value,
-    validate_data,
-)
+from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
 from ceres.manages.vulnerability_manage import VulnerabilityManage
@@ -184,9 +178,8 @@ def cve_command_manage(args):
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):
             exit(1)
-        status_code, cve_fix_result = VulnerabilityManage().cve_fix(data.get("cves"))
-        res = StatusCode.make_response_body((status_code, {"result": cve_fix_result}))
-        print(json.dumps(res))
+        status_code, cve_fix_result = VulnerabilityManage().cve_fix(data)
+        print(json.dumps(StatusCode.make_response_body((status_code, cve_fix_result))))
 
     elif args.rollback:
         data = convert_string_to_json(args.rollback)

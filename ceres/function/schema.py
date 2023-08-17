@@ -44,7 +44,7 @@ REGISTER_SCHEMA = {
 
 REPO_SET_SCHEMA = {
     "type": "object",
-    "required": ["repo_info", "check_items", "check"],
+    "required": ["repo_info", "check_items"],
     "properties": {
         "repo_info": {
             "type": "object",
@@ -56,7 +56,6 @@ REPO_SET_SCHEMA = {
             },
         },
         "check_items": {"type": "array", "items": {"type": "string"}},
-        "check": {"enum": [True, False]},
     },
 }
 
@@ -68,19 +67,30 @@ CVE_SCAN_SCHEMA = {
 
 CVE_FIX_SCHEMA = {
     "type": "object",
-    "required": ["check", "check_items", "cves"],
+    "required": ["accepted", "check_items", "cves", "takeover"],
     "properties": {
         "check_items": {"type": "array", "items": {"type": "string"}},
-        "check": {"enum": [True, False]},
+        "accepted": {"enum": [True, False]},
+        "takeover": {"enum": [True, False]},
         "cves": {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["cve_id", "hotpatch"],
+                "required": ["cve_id", "rpms"],
                 "properties": {
                     "cve_id": {"type": "string", "minLength": 1},
-                    "hotpatch": {"enum": [True, False]},
-                    "accepted": {"enum": [True, False]},
+                    "rpms": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["installed_rpm", "available_rpm", "fix_way"],
+                            "properties": {
+                                "installed_rpm": {"type": "string", "minLength": 1},
+                                "available_rpm": {"type": "string", "minLength": 1},
+                                "fix_way": {"enum": ["hotpatch", "coldpatch"]},
+                            },
+                        },
+                    },
                 },
             },
         },
