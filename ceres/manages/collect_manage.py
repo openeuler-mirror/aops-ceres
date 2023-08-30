@@ -17,6 +17,7 @@ import pwd
 import re
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Any, Dict, List, Union
+import xml.etree.ElementTree as ET
 
 from ceres.conf.constant import (
     HOST_COLLECT_INFO_SUPPORT,
@@ -305,30 +306,33 @@ class Collect:
                     }
                 ]
         """
-        code, stdout, _ = execute_shell_command("lshw -json -c disk")
+        code, stdout, _ = execute_shell_command("lshw -xml -c disk")
         if code != CommandExitCode.SUCCEED:
             LOGGER.error(stdout)
             return []
 
-        # Convert the command result to a json string
-        # lshw_data e.g  "{...},{...},{...}"
-        lshw_data = f"[{stdout}]"
-
         try:
-            disk_info_list = json.loads(lshw_data)
-        except json.decoder.JSONDecodeError:
-            LOGGER.warning("Json conversion error, " "please check command 'lshw -json -c disk'")
-            disk_info_list = []
+            tree = ET.ElementTree(ET.fromstring(stdout))
+        except ET.ParseError as error:
+            LOGGER.error(error)
+            LOGGER.warning("disk info parse error, please check command 'lshw -xml -c disk'")
+            return []
+
+        disk_list = tree.findall("node")
+
+        if not disk_list:
+            return []
 
         res = []
-        if disk_info_list:
-            for disk_info in disk_info_list:
-                res.append(
-                    {
-                        "model": disk_info.get('description') or disk_info.get('product'),
-                        "capacity": f"{disk_info.get('size', 0) // 10 ** 9}GB",
-                    }
-                )
+        for node in disk_list:
+            model = node.find("description") if node.find("product") is None else node.find("product")
+            size = node.find("size")
+            res.append(
+                {
+                    "model": model.text if model is not None else "unknown",
+                    "capacity": f"{int(size.text) / (1024**3)} GB" if size is not None else "unknown",
+                }
+            )
 
         return res
 
