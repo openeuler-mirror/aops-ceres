@@ -25,6 +25,7 @@ REPO_CONTENT_INCORRECT = "Repo.Content.Incorrect"
 REPO_NOT_SET = "Repo.Not.Set"
 NO_COMMAND = "No.Command"
 NOT_PATCH = "Not.Patch"
+PRE_CHECK_ERROR = "Pre.Check.Error"
 
 COMMAND_EXEC_ERROR = "Command.Error"
 
@@ -49,6 +50,7 @@ class StatusCode:
         NO_COMMAND: {"msg": "command not found"},
         NOT_PATCH: {"msg": "no valid hot patch is matched"},
         COMMAND_EXEC_ERROR: {"msg": "the input command is incorrect"},
+        PRE_CHECK_ERROR: {"msg": "Preset check item detection failed"},
     }
 
     @classmethod
