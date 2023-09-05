@@ -70,3 +70,8 @@ REGISTER_HELP_INFO = """
 class CommandExitCode:
     SUCCEED = 0
     FAIL = 255
+
+
+class TaskExecuteRes:
+    SUCCEED = "succeed"
+    FAIL = "fail"
