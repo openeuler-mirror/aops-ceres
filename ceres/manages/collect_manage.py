@@ -362,8 +362,8 @@ class Collect:
         try:
             with open(file_path, 'r', encoding='utf8') as f:
                 content = f.read()
-        except UnicodeDecodeError:
-            LOGGER.error(f'{file_path} may not be a text file')
+        except (OSError, ValueError) as error:
+            LOGGER.error(f'failed to read file named {file_path} with error message:\n {error}')
             return {}
         file_attr = os.stat(file_path)
         file_mode = oct(file_attr.st_mode)[4:]
