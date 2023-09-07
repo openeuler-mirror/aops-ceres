@@ -17,6 +17,7 @@ from ceres.function.command import (
     cve_command_manage,
     plugin_command_manage,
     register_on_manager,
+    sync_conf_manage,
 )
 from ceres.function.log import LOGGER
 
@@ -54,6 +55,11 @@ def main():
     cve_group.add_argument("--fix", type=str)
     cve_group.add_argument("--rollback", type=str)
     subparsers_cve.set_defaults(function=cve_command_manage)
+
+    subparsers_sync = subparsers.add_parser("sync", help='sync conf file')
+    sync_group = subparsers_sync.add_mutually_exclusive_group(required=True)
+    sync_group.add_argument("--conf", type=str)
+    subparsers_sync.set_defaults(function=sync_conf_manage)
 
     args = parser.parse_args()
     try:

@@ -113,3 +113,15 @@ CVE_ROLLBACK_SCHEMA = {
         }
     },
 }
+
+CONF_SYNC_SCHEMA = {
+    "type": "object",
+    "required": [
+        "file_path",
+        "content"
+    ],
+    "properties": {
+        "file_path": {"type": "string", "minLength": 1},
+        "content": {"type": "string", "minLength": 1}
+    }
+}
