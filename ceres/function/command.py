@@ -25,11 +25,13 @@ from ceres.function.schema import (
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
     STRING_ARRAY,
+    CONF_SYNC_SCHEMA,
 )
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
+from ceres.manages.sync_manage import SyncManage
 from ceres.manages.vulnerability_manage import VulnerabilityManage
 
 
@@ -191,3 +193,12 @@ def cve_command_manage(args):
     else:
         print("Please check the input parameters!")
         exit(1)
+
+
+def sync_conf_manage(args):
+    if args.conf:
+        config = convert_string_to_json(args.conf)
+        if not validate_data(config, CONF_SYNC_SCHEMA):
+            exit(1)
+        res = StatusCode.make_response_body(SyncManage.sync_contents_to_conf(config))
+        print(json.dumps(res))
