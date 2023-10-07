@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 NAME = "aops-ceres"
-VERSION = "1.2.0"
+VERSION = "1.3.2"
 
 INSTALL_REQUIRES = ["jsonschema", "requests", "libconf", "concurrent_log_handler"]
 
