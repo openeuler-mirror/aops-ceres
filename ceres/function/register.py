@@ -11,7 +11,6 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import json
-from typing import Dict
 
 import requests
 
