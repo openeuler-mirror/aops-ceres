@@ -286,8 +286,14 @@ class HotpatchUpdateInfo(object):
             # check whether the relevant target required package is installed on this machine
             if not inst_pkgs:
                 return
+            # for kernel rpm, inst_pkgs is based on the kernel version of the current system
+            if required_pkg_name == "kernel":
+                inst_pkgs = [self.get_kernel_version_of_system()]
             for inst_pkg in inst_pkgs:
-                inst_pkg_vere = '%s-%s' % (inst_pkg.version, inst_pkg.release)
+                if isinstance(inst_pkg, str):
+                    inst_pkg_vere = inst_pkg.rsplit(".", 1)[0]
+                else:
+                    inst_pkg_vere = '%s-%s' % (inst_pkg.version, inst_pkg.release)
                 if not self.version.larger_than(required_pkg_vere, inst_pkg_vere):
                     hotpatch.state = self.UNRELATED
                 elif required_pkg_vere != inst_pkg_vere:
@@ -303,6 +309,24 @@ class HotpatchUpdateInfo(object):
         else:
             hotpatch.state = self.INSTALLABLE
         return
+
+    def get_kernel_version_of_system(self) -> str:
+        """
+        Get the kernel version of current system, according to the command of 'uname -r'.
+
+        Returns:
+            str: kernel version
+        """
+        cmd = ["uname", "-r"]
+        kernel_version = ''
+        kernel_version, return_code = cmd_output(cmd)
+        # 'uname -r' show the kernel version-release.arch of the current system
+        # [root@openEuler hotpatch]# uname -r
+        # 5.10.0-136.12.0.86.oe2203sp1.x86_64
+        if return_code != SUCCEED:
+            return kernel_version
+        kernel_version = kernel_version.split('\n')[0]
+        return kernel_version
 
     def _parse_and_store_from_xml(self, updateinfoxml: str):
         """
