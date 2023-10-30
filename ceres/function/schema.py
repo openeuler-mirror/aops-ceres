@@ -125,3 +125,7 @@ CONF_SYNC_SCHEMA = {
         "content": {"type": "string", "minLength": 1}
     }
 }
+
+DIRECTORY_FILE_SCHEMA = {
+    "type": "string"
+}

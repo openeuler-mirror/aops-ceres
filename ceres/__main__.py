@@ -18,6 +18,7 @@ from ceres.function.command import (
     plugin_command_manage,
     register_on_manager,
     sync_conf_manage,
+    list_file_manage
 )
 from ceres.function.log import LOGGER
 
@@ -60,6 +61,11 @@ def main():
     sync_group = subparsers_sync.add_mutually_exclusive_group(required=True)
     sync_group.add_argument("--conf", type=str)
     subparsers_sync.set_defaults(function=sync_conf_manage)
+
+    subparsers_list = subparsers.add_parser("ragdoll", help='list pam.d file')
+    list_group = subparsers_list.add_mutually_exclusive_group(required=True)
+    list_group.add_argument("--list", type=str)
+    subparsers_list.set_defaults(function=list_file_manage)
 
     args = parser.parse_args()
     try:

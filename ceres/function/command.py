@@ -25,12 +25,13 @@ from ceres.function.schema import (
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
     STRING_ARRAY,
-    CONF_SYNC_SCHEMA,
+    CONF_SYNC_SCHEMA, DIRECTORY_FILE_SCHEMA,
 )
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
+from ceres.manages.list_file_manage import ListFileManage
 from ceres.manages.sync_manage import SyncManage
 from ceres.manages.vulnerability_manage import VulnerabilityManage
 
@@ -201,4 +202,13 @@ def sync_conf_manage(args):
         if not validate_data(config, CONF_SYNC_SCHEMA):
             exit(1)
         res = StatusCode.make_response_body(SyncManage.sync_contents_to_conf(config))
+        print(json.dumps(res))
+
+
+def list_file_manage(args):
+    if args.list:
+        if not validate_data(args.list, DIRECTORY_FILE_SCHEMA):
+            exit(1)
+        status, response = ListFileManage.list_file(args.list)
+        res = StatusCode.make_response_body((status, response))
         print(json.dumps(res))
