@@ -17,7 +17,7 @@ from dnf.cli.commands.updateinfo import UpdateInfoCommand
 from dataclasses import dataclass
 from .updateinfo_parse import HotpatchUpdateInfo
 from .version import Versions
-from .baseclass import Hotpatch
+from .hotpatch import Hotpatch
 
 
 @dataclass
@@ -146,7 +146,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
         return apkg_adv_insts
 
-    def get_fixed_cve_id_and_hotpatch_require_info(self, fixed_cve_id_and_hotpatch: set):
+    def get_fixed_cve_id_and_hotpatch_require_info(self, fixed_cve_id_and_hotpatch: set) -> set:
         """
         Get fixed cve id and hotpatch require package information.
 
@@ -158,7 +158,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
             }
 
         Returns:
-            set:
+            set: fixed cve id and hotpatch require package information(name-version-release)
             e.g.
             {
                 ('CVE-2023-1111', 'redis-6.2.5-1')
@@ -170,7 +170,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
             fixed_cve_id_and_hotpatch_require_info.add((fixed_cve_id, fixed_hotpatch.required_pkgs_str))
         return fixed_cve_id_and_hotpatch_require_info
 
-    def get_iterated_cve_id_and_hotpatch_require_info(self, iterated_cve_id_and_hotpatch: set):
+    def get_iterated_cve_id_and_hotpatch_require_info(self, iterated_cve_id_and_hotpatch: set) -> set:
         """
         Get iterated cve id and hotpatch require package name information.
 
@@ -183,7 +183,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
 
         Returns:
-            set
+            set: iterated cve id and hotpatch require package information (name)
             e.g.
             {
                 ('CVE-2023-1111', 'redis')
@@ -197,7 +197,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
     def check_is_in_fixed_cve_id_and_hotpatch_require_info(
         self, cve_id: str, hotpatch: Hotpatch, fixed_cve_id_and_hotpatch_require_info: set
-    ):
+    ) -> bool:
         """
         Check the (cve_id, hotpatch.required_pkgs_str) whether is in fixed_cve_id_and_hotpatch_require_info.
         If the (cve_id, hotpatch.required_pkgs_str) is in fixed_cve_id_and_hotpatch_require_info, the cve corresponding
@@ -223,7 +223,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
     def check_is_in_iterated_cve_id_and_hotpatch_require_info(
         self, cve_id: str, hotpatch: Hotpatch, iterated_cve_id_and_hotpatch_require_info: set
-    ):
+    ) -> bool:
         """
         Check the (cve_id, hotpatch.required_pkgs_name_str) whether is in iterated_cve_id_and_hotpatch_require_info.
         If the (cve_id, hotpatch.required_pkgs_name_str) is in fixed_cve_id_and_hotpatch_require_info, the cve
@@ -256,7 +256,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
         fixed_cve_id_and_hotpatch: set,
         installable_cve_id_and_hotpatch: set,
         iterated_cve_id_and_hotpatch: set,
-    ):
+    ) -> DisplayItem:
         """
         Get filtered display item.
 
@@ -270,6 +270,12 @@ class HotUpdateinfoCommand(dnf.cli.Command):
             e.g.
             {
                 ('CVE-2023-1111', Hotpatch)
+            }
+
+            installable_cve_id_and_hotpatch(set):
+            e.g.
+            {
+                ('CVE-2023-1112', Hotpatch)
             }
 
             iterated_cve_id_and_hotpatch(set):
@@ -293,9 +299,9 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
     def get_installed_filtered_display_item(
         self, format_lines: set, fixed_cve_id_and_hotpatch: set, installable_cve_id_and_hotpatch: set
-    ):
+    ) -> DisplayItem:
         """
-        Get filtered display item by removing installable cve id and hotpatch, and removing iterated cve id
+        Get filtered display item by removing installable cve id and hotpatch, and removing fixed cve id
         and hotpatch. For hotpatch, only show ones which have been installed and been actived/accepted in
         syscare.
 
@@ -303,6 +309,12 @@ class HotUpdateinfoCommand(dnf.cli.Command):
             format_lines(set):
             {
                 (cve_id, adv_type, coldpatch, hotpatch)
+            }
+
+            fixed_cve_id_and_hotpatch(set):
+            e.g.
+            {
+                ('CVE-2023-1111', Hotpatch)
             }
 
             installable_cve_id_and_hotpatch(set):
@@ -353,10 +365,17 @@ class HotUpdateinfoCommand(dnf.cli.Command):
 
     def get_available_filtered_display_item(
         self, format_lines: set, fixed_cve_id_and_hotpatch: set, iterated_cve_id_and_hotpatch: set
-    ):
+    ) -> DisplayItem:
         """
         Get filtered display item by removing fixed cve id and hotpatch, and removing iterated cve id
-        and hotpatch.
+        and hotpatch. The iterated_cve_id_and_hotpatch is used for following condition:
+
+        e.g.
+
+        CVE-2023-1111 Important/Sec. redis-6.2.5-2.x86_64 -
+        CVE-2023-1112 Important/Sec. redis-6.2.5-2.x86_64 -
+        CVE-2023-1111 Important/Sec. redis-6.2.5-2.x86_64 patch-redis-6.2.5-1-SGL_CVE_2023_1111_CVE_2023_1112-1-1.x86_64
+        CVE-2023-1112 Important/Sec. redis-6.2.5-2.x86_64 patch-redis-6.2.5-1-SGL_CVE_2023_1111_CVE_2023_1112-1-1.x86_64
 
         Args:
             format_lines(set):
@@ -429,7 +448,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
         display_item = DisplayItem(idw=idw, tiw=tiw, ciw=ciw, display_lines=display_lines)
         return display_item
 
-    def append_fixed_cve_id_and_hotpatch(self, fixed_cve_id_and_hotpatch: set):
+    def append_fixed_cve_id_and_hotpatch(self, fixed_cve_id_and_hotpatch: set) -> set:
         """
         Append fixed cve id and hotpatch in fixed_cve_id_and_hotpatch. The ACC hotpatch that are less or equal
         to the highest ACC actived version-release for the same target required package, is considered to be
@@ -477,7 +496,7 @@ class HotUpdateinfoCommand(dnf.cli.Command):
                     fixed_cve_id_and_hotpatch.add((cve_id, hotpatch))
         return fixed_cve_id_and_hotpatch
 
-    def get_formatting_parameters_and_display_lines(self):
+    def get_formatting_parameters_and_display_lines(self) -> DisplayItem:
         """
         Append hotpatch information according to the output of 'dnf updateinfo list cves'
 

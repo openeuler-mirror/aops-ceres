@@ -18,9 +18,11 @@ import subprocess
 import xml.etree.ElementTree as ET
 from functools import cmp_to_key
 from typing import List
-from .baseclass import Hotpatch, Cve, Advisory
 from .syscare import Syscare
 from .version import Versions
+from .hotpatch import Hotpatch
+from .cve import Cve
+from .advisory import Advisory
 
 SUCCEED = 0
 FAIL = 255
@@ -191,7 +193,7 @@ class HotpatchUpdateInfo(object):
         advisory['adv_type'] = update.get('type')
         return advisory
 
-    def _get_hotpatch_require_pkgs_info(self, hotpatch: Hotpatch):
+    def _get_hotpatch_require_pkgs_info(self, hotpatch: Hotpatch) -> dict:
         """
         Get require packages from requires info of hotpatch packages. Specifically, read the require
         information of the rpm package, get the target coldpatch rpm package, and record the
@@ -320,9 +322,6 @@ class HotpatchUpdateInfo(object):
         cmd = ["uname", "-r"]
         kernel_version = ''
         kernel_version, return_code = cmd_output(cmd)
-        # 'uname -r' show the kernel version-release.arch of the current system
-        # [root@openEuler hotpatch]# uname -r
-        # 5.10.0-136.12.0.86.oe2203sp1.x86_64
         if return_code != SUCCEED:
             return kernel_version
         kernel_version = kernel_version.split('\n')[0]
