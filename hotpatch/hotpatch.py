@@ -10,156 +10,193 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-import dnf
-from dnfpluginscore import _, logger
-from .syscare import Syscare
-from .updateinfo_parse import HotpatchUpdateInfo
+class Hotpatch(object):
+    __slots__ = [
+        '_name',
+        '_version',
+        '_release',
+        '_cves',
+        '_advisory',
+        '_arch',
+        '_filename',
+        '_state',
+        '_required_pkgs_info',
+        '_required_pkgs_str',
+        '_required_pkgs_name_str',
+    ]
 
-
-@dnf.plugin.register_command
-class HotpatchCommand(dnf.cli.Command):
-    CVE_ID_INDEX = 0
-    Name_INDEX = 1
-    STATUS_INDEX = 2
-
-    aliases = ['hotpatch']
-    summary = _('show hotpatch info')
-    syscare = Syscare()
-
-    def __init__(self, cli):
+    def __init__(self, name, version, arch, filename, release):
         """
-        Initialize the command
+        name(str): hotpatch name
+        version(str): hotpatch version
+        arch(str): hotpatch arch
+        filename(str): hotpatch filename
+        release(str): hotpatch str
         """
-        super(HotpatchCommand, self).__init__(cli)
+        self._name = name
+        self._version = version
+        self._arch = arch
+        self._filename = filename
+        self._cves = []
+        self._advisory = None
+        self._state = ''
+        self._release = release
+        self._required_pkgs_info = dict()
+        self._required_pkgs_str = ''
+        self._required_pkgs_name_str = ''
 
-    @staticmethod
-    def set_argparser(parser):
-        output_format = parser.add_mutually_exclusive_group()
-        output_format.add_argument(
-            '--list', nargs='?', type=str, default='', choices=['cve', 'cves'], help=_('show list of hotpatch')
-        )
-        output_format.add_argument(
-            '--apply', type=str, default=None, dest='apply_name', nargs=1, help=_('apply hotpatch')
-        )
-        output_format.add_argument(
-            '--remove', type=str, default=None, dest='remove_name', nargs=1, help=_('remove hotpatch')
-        )
-        output_format.add_argument(
-            '--active', type=str, default=None, dest='active_name', nargs=1, help=_('active hotpatch')
-        )
-        output_format.add_argument(
-            '--deactive', type=str, default=None, dest='deactive_name', nargs=1, help=_('deactive hotpatch')
-        )
-        output_format.add_argument(
-            '--accept', type=str, default=None, dest='accept_name', nargs=1, help=_('accept hotpatch')
-        )
+    @property
+    def state(self):
+        return self._state
 
-    def configure(self):
-        demands = self.cli.demands
-        demands.sack_activation = True
-        demands.available_repos = True
+    @state.setter
+    def state(self, value):
+        self._state = value
 
-        self.filter_cves = self.opts.cves if self.opts.cves else None
-
-    def run(self):
-        self.hp_hawkey = HotpatchUpdateInfo(self.cli.base, self.cli)
-        if self.opts.list != '':
-            self.display()
-        if self.opts.apply_name:
-            self.operate_hot_patches(self.opts.apply_name, "apply", self.syscare.apply)
-        if self.opts.remove_name:
-            self.operate_hot_patches(self.opts.remove_name, "remove", self.syscare.remove)
-        if self.opts.active_name:
-            self.operate_hot_patches(self.opts.active_name, "active", self.syscare.active)
-        if self.opts.deactive_name:
-            self.operate_hot_patches(self.opts.deactive_name, "deactive", self.syscare.deactive)
-        if self.opts.accept_name:
-            self.operate_hot_patches(self.opts.accept_name, "accept", self.syscare.accept)
-
-    def _filter_and_format_list_output(self, echo_lines: list):
+    @property
+    def name(self):
         """
-        Only show specific cve information if cve id is given, and format the output.
+        name: patch-src_pkg-ACC or patch-src_pkg-SGL_xxx
         """
-        format_lines = []
-        title = ['CVE-id', 'base-pkg/hotpatch', 'status']
-        idw = len(title[0])
-        naw = len(title[1])
-        for echo_line in echo_lines:
-            cve_id, name, status = (
-                echo_line[self.CVE_ID_INDEX],
-                echo_line[self.Name_INDEX],
-                echo_line[self.STATUS_INDEX],
-            )
-            if self.filter_cves is not None and cve_id not in self.filter_cves:
-                continue
-            idw = max(idw, len(cve_id))
-            naw = max(naw, len(name))
-            format_lines.append([cve_id, name, status])
+        return self._name
 
-        if not format_lines:
-            return
+    @property
+    def version(self):
+        return self._version
 
-        # print title
-        if self.opts.list in ['cve', 'cves']:
-            print(
-                '%-*s %-*s %s' % (idw, title[self.CVE_ID_INDEX], naw, title[self.Name_INDEX], title[self.STATUS_INDEX])
-            )
-        else:
-            print('%-*s %s' % (naw, title[self.Name_INDEX], title[self.STATUS_INDEX]))
+    @property
+    def release(self):
+        return self._release
 
-        format_lines.sort(key=lambda x: (x[self.Name_INDEX], x[self.CVE_ID_INDEX]))
-
-        if self.opts.list in ['cve', 'cves']:
-            for cve_id, name, status in format_lines:
-                print('%-*s %-*s %s' % (idw, cve_id, naw, name, status))
-        else:
-            new_format_lines = [(name, status) for _, name, status in format_lines]
-            deduplicated_format_lines = list(set(new_format_lines))
-            deduplicated_format_lines.sort(key=new_format_lines.index)
-            for name, status in deduplicated_format_lines:
-                print('%-*s %s' % (naw, name, status))
-
-    def display(self):
+    @property
+    def src_pkg(self):
         """
-        Display hotpatch information.
+        The compiled source package for hotpatch.
+
+        src_pkg: name-version-release
+        """
+        src_pkg = self.name[self.name.index('-') + 1 : self.name.rindex('-')]
+        return src_pkg
+
+    @property
+    def required_pkgs_info(self):
+        """
+        The target fixed rpm package of the hotpatch.
+        """
+        return self._required_pkgs_info
+
+    @required_pkgs_info.setter
+    def required_pkgs_info(self, required_pkgs_info):
+        """
+        The required pkgs info are from the 'dnf repoquery --requires name-version-release.arch'. The
+        required pkgs info are considered to be truely fixed rpm package.
 
         e.g.
-        For the command of 'dnf hotpatch --list', the echo_lines is [[base-pkg/hotpatch, status], ...]
-        For the command of 'dnf hotpatch --list cve', the echo_lines is [[cve_id, base-pkg/hotpatch, status], ...]
+            {
+                'redis': '6.2.5-1',
+                'redis-cli': '6.2.5-1'
+            }
         """
 
-        hotpatch_cves = self.hp_hawkey.hotpatch_cves
-        echo_lines = []
-        for cve_id in hotpatch_cves.keys():
-            for hotpatch in hotpatch_cves[cve_id].hotpatches:
-                for name, status in self.hp_hawkey._hotpatch_state.items():
-                    if hotpatch.syscare_subname not in name:
-                        continue
-                    echo_line = [cve_id, name, status]
-                    echo_lines.append(echo_line)
-        self._filter_and_format_list_output(echo_lines)
+        self._required_pkgs_info = required_pkgs_info
+        required_pkgs_str_list = []
+        required_pkgs_name_str_list = []
+        # sort the _required_pkgs_info and concatenate the str to get _required_pkgs_str
+        for required_pkgs_name, required_pkgs_vere in self._required_pkgs_info.items():
+            required_pkgs_str_list.append("%s-%s" % (required_pkgs_name, required_pkgs_vere))
+            required_pkgs_name_str_list.append(required_pkgs_name)
+        sorted(required_pkgs_str_list)
+        sorted(required_pkgs_name_str_list)
+        self._required_pkgs_str = ",".join(required_pkgs_str_list)
+        self._required_pkgs_name_str = ",".join(required_pkgs_name_str_list)
 
-    def operate_hot_patches(self, target_patch: list, operate, func) -> None:
+    @property
+    def required_pkgs_str(self):
         """
-        operate hotpatch using syscare command
-        Args:
-            target_patch: type:list,e.g.:['redis-6.2.5-1/HP2']
+        The truly fixed rpm package mark, which is composed of required_pkgs_info.
+
+        e.g.
+            'redis-6.2.5-1,redis-cli-6.2.5-1'
+        """
+        return self._required_pkgs_str
+
+    @property
+    def required_pkgs_name_str(self):
+        """
+        The truly fixed rpm package name mark, which is composed of keys of required_pkgs_info.
+
+        e.g.
+            'redis,redis-cli'
+        """
+        return self._required_pkgs_name_str
+
+    @property
+    def src_pkg_nevre(self):
+        """
+        Parse the source package to get the source package name, the source package version and the source package release
 
         Returns:
-            None
+            src_pkg_name, src_pkg_version, src_pkg_release
         """
-        if len(target_patch) != 1:
-            logger.error(_("using dnf hotpatch --%s wrong!"), operate)
-            return
-        target_patch = target_patch[0]
-        logger.info(_("Gonna %s this hot patch: %s"), operate, self.base.output.term.bold(target_patch))
+        src_pkg = self.src_pkg
+        release_pos = src_pkg.rindex('-')
+        version_pos = src_pkg.rindex('-', 0, release_pos)
+        src_pkg_name, src_pkg_version, src_pkg_release = (
+            src_pkg[0:version_pos],
+            src_pkg[version_pos + 1 : release_pos],
+            src_pkg[release_pos + 1 :],
+        )
+        return src_pkg_name, src_pkg_version, src_pkg_release
 
-        output, status = func(target_patch)
-        if status:
-            logger.error(
-                _("%s hot patch '%s' failed, remain original status."),
-                operate,
-                self.base.output.term.bold(target_patch),
-            )
-        else:
-            logger.info(_("%s hot patch '%s' succeed"), operate, self.base.output.term.bold(target_patch))
+    @property
+    def nevra(self):
+        """
+        Format the filename as 'name-versioin-release.arch' for display, which is defined as nevra
+
+        nevra: name-version-release.arch
+        """
+        return self.filename[0 : self.filename.rindex('.')]
+
+    @property
+    def hotpatch_name(self):
+        """
+        There are two types of hotpatch, ACC hotpatch and SGL hotpatch. The ACC hotpatch can be made
+        iteratively, and its 'hotpatch_name' is defined as ACC. The SGL hotpatch cannot be made iteratively,
+        and its 'hotpatch_name' is defined as SGL_xxx. The 'xxx' in the SGL_xxx means the issue it solves.
+        """
+        hotpatch_name = self.name[self.name.rindex('-') + 1 :]
+        return hotpatch_name
+
+    @property
+    def syscare_subname(self):
+        """
+        The 'syscare_subname' is used for hotpatch status querying in syscare list, which is composed of
+        'src_pkg/hotpatch_name-version-release'.
+        """
+        src_pkg = '%s-%s-%s' % (self.src_pkg_nevre)
+
+        return '%s/%s-%s-%s' % (src_pkg, self.hotpatch_name, self.version, self.release)
+
+    @property
+    def cves(self):
+        return self._cves
+
+    @cves.setter
+    def cves(self, cves):
+        self._cves = cves
+
+    @property
+    def advisory(self):
+        return self._advisory
+
+    @advisory.setter
+    def advisory(self, advisory):
+        self._advisory = advisory
+
+    @property
+    def arch(self):
+        return self._arch
+
+    @property
+    def filename(self):
+        return self._filename
