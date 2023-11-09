@@ -12,16 +12,14 @@
 # ******************************************************************************/
 from __future__ import print_function
 
-from time import sleep
 import dnf.base
 import dnf.exceptions
 import hawkey
+from time import sleep
 from dnf.cli import commands
 from dnf.cli.option_parser import OptionParser
-
-# from dnf.cli.output import Output
 from dnfpluginscore import _, logger
-
+from .upgrade_en import UpgradeEnhanceCommand
 from .hot_updateinfo import HotUpdateinfoCommand
 from .updateinfo_parse import HotpatchUpdateInfo
 from .syscare import Syscare
@@ -37,6 +35,9 @@ class HotupgradeCommand(dnf.cli.Command):
     usage = ""
     syscare = Syscare()
     hp_list = []
+    is_need_accept_kernel_hp = False
+    is_kernel_coldpatch_installed = False
+    kernel_coldpatch = ''
 
     @staticmethod
     def set_argparser(parser):
@@ -49,6 +50,13 @@ class HotupgradeCommand(dnf.cli.Command):
         )
         parser.add_argument(
             "--takeover", default=False, action='store_true', help=_('kernel cold patch takeover operation')
+        )
+        parser.add_argument(
+            "-f",
+            dest='force',
+            default=False,
+            action='store_true',
+            help=_('force retain kernel rpm package if kernel kabi check fails'),
         )
 
     def configure(self):
@@ -104,16 +112,71 @@ class HotupgradeCommand(dnf.cli.Command):
 
     def run_transaction(self) -> None:
         """
-        apply hot patches
+        apply hot patches, and process kabi check for kernel package rpm.
         Returns:
             None
         """
         # syscare need a little bit time to process the installed hot patch
         sleep(0.5)
+
+        is_all_kernel_hp_actived = True
+        # hotpatch that fail to be activated will be automatically uninstalled
+        target_remove_hp = []
+        acceptable_hp = []
         for hp in self.hp_list:
-            self._apply_hp(hp)
-            if self.opts.takeover and self.is_need_accept_kernel_hp:
+            status = self._apply_hp(hp)
+            if status:
+                target_remove_hp.append(hp)
+            if not hp.startswith('patch-kernel-'):
+                continue
+            if status:
+                is_all_kernel_hp_actived &= False
+            else:
+                is_all_kernel_hp_actived &= True
+                acceptable_hp.append(hp)
+
+        for ts_item in self.base.transaction:
+            if ts_item.action not in dnf.transaction.FORWARD_ACTIONS:
+                continue
+            if str(ts_item.pkg) == self.kernel_coldpatch:
+                self.is_kernel_coldpatch_installed = True
+
+        self.keep_hp_operation_atomic(is_all_kernel_hp_actived, target_remove_hp)
+
+        if self.is_need_accept_kernel_hp and acceptable_hp:
+            logger.info(_('No available kernel cold patch for takeover, gonna accept available kernel hot patch.'))
+            for hp in acceptable_hp:
                 self._accept_kernel_hp(hp)
+
+    def keep_hp_operation_atomic(self, is_all_kernel_hp_actived, target_remove_hp):
+        """
+        Keep hotpatch related operation atomic. Once one kernel hotpatch is not successfully activated or
+        kabi check fails, uninstall the kernel coldpatch. And unsuccessfully activated hotpatch package
+        will be removed.
+
+        Args:
+            is_all_kernel_hp_actived(bool): are all kernel related hotpatches activated
+            target_remove_hp(list): target remove hotpatch list
+        """
+        upgrade_en = UpgradeEnhanceCommand(self.cli)
+
+        if self.is_kernel_coldpatch_installed:
+            if not is_all_kernel_hp_actived:
+                logger.info(_('Gonna remove %s due to some kernel hotpatch activation failed.'), self.kernel_coldpatch)
+                upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.is_need_accept_kernel_hp = False
+            # process kabi check
+            elif not upgrade_en.kabi_check(str(self.kernel_coldpatch)) and not self.opts.force:
+                logger.info(_('Gonna remove %s due to Kabi check failed.'), self.kernel_coldpatch)
+                # rebuild rpm database for processing kernel rpm remove operation
+                upgrade_en.rebuild_rpm_db()
+                upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.is_need_accept_kernel_hp = True
+
+        if target_remove_hp:
+            logger.info(_('Gonna remove unsuccessfully activated hotpatch rpm.'))
+            for hotpatch in target_remove_hp:
+                upgrade_en.remove_rpm(hotpatch)
 
     def _apply_hp(self, hp_full_name):
         pkg_info = self._parse_hp_name(hp_full_name)
@@ -123,6 +186,7 @@ class HotupgradeCommand(dnf.cli.Command):
             logger.info(_('Apply hot patch failed: %s.'), hp_subname)
         else:
             logger.info(_('Apply hot patch succeed: %s.'), hp_subname)
+        return status
 
     @staticmethod
     def _get_hp_subname_for_syscare(pkg_info: dict) -> str:
@@ -394,9 +458,11 @@ class HotupgradeCommand(dnf.cli.Command):
         """
         process takeover operation.
         """
+        if not self.get_kernel_hp_list():
+            return
         kernel_coldpatch = self.get_target_installed_kernel_coldpatch_of_hotpatch()
-        self.is_need_accept_kernel_hp = False
         if kernel_coldpatch:
+            self.kernel_coldpatch = kernel_coldpatch
             logger.info(_("Gonna takeover kernel cold patch: ['%s']" % kernel_coldpatch))
             success = self._install_rpm_pkg([kernel_coldpatch])
             if success:
@@ -411,6 +477,21 @@ class HotupgradeCommand(dnf.cli.Command):
             )
         )
         return
+
+    def get_kernel_hp_list(self) -> list:
+        """
+        Get kernel hp list from self.hp_list.
+
+        Returns:
+            list: kernel hp list
+            e.g.
+            ['patch-kernel-5.10.0-153.12.0.92.oe2203sp2-ACC-1-1.x86_64']
+        """
+        kernel_hp_list = []
+        for hp in self.hp_list:
+            if hp.startswith('patch-kernel-'):
+                kernel_hp_list.append(hp)
+        return kernel_hp_list
 
     def get_target_installed_kernel_coldpatch_of_hotpatch(self) -> str:
         """

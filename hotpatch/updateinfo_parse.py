@@ -322,6 +322,9 @@ class HotpatchUpdateInfo(object):
         cmd = ["uname", "-r"]
         kernel_version = ''
         kernel_version, return_code = cmd_output(cmd)
+        # 'uname -r' show the kernel version-release.arch of the current system
+        # [root@openEuler hotpatch]# uname -r
+        # 5.10.0-136.12.0.86.oe2203sp1.x86_64
         if return_code != SUCCEED:
             return kernel_version
         kernel_version = kernel_version.split('\n')[0]
