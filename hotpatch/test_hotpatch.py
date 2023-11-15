@@ -13,8 +13,8 @@
 import unittest
 from unittest import mock
 
-from .hotpatch import HotpatchCommand
-from .syscare import SUCCEED, FAIL
+from .hotpatch_ops import HotpatchCommand
+from .syscare import FAIL, SUCCEED
 
 
 class HotpatchTestCase(unittest.TestCase):
