@@ -34,7 +34,9 @@ public:
   std::vector<ProcessCoreTrace>
       coreTrace; // CPU information of pid in each time period
   int schedSwitchDelay;
-  int cpuSwichTimes;
+  int schedSwitchTimes;
+  double percentageSchedSwitch;
+  int cpuSwitchTimes;
   int delaySum;
 };
 
@@ -68,10 +70,11 @@ private: // process sched info
   std::unordered_map<int, ProcessSchedInfo> processSchedMap; // [pid]
   // std::vector <std::vector<CpuSchedInfo>> allCpuSchedInfo;  // [coreIndex]
   void processSchedAnalysisLoop(const int &pid, const int &timestamp,
-                                const int &coreIndex, LINE_TYPE_E line_type);
+                                const int &coreIndex);
   void schedInfoProc();
   void schedInfoAnalysis();
   void saveSchedInfoToFile();
+  void saveSchedInfoSummaryToFile();
 
 public:
   void schedAnalysisProc();

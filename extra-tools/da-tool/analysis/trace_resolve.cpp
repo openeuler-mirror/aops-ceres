@@ -95,7 +95,7 @@ void TraceResolve::resolveTrace()
     while (getline(file, line)) {
         line_num++;
         if (line_num % 10000 == 0) {
-            std::cout << "resolve:" << line_num << " lines," << regex_num << " lines match " << std::endl;
+            std::cout << regex_num << "/" << line_num << " (matched/lines)" << std::endl;
         }
         if (line_num < cfg.readTraceBegin) {
             continue;
@@ -141,8 +141,7 @@ void TraceResolve::resolveTrace()
         }
 
         if (isMatch) {
-            if (isFirstMatch)
-            {
+            if (isFirstMatch) {
                 startTimeIntPart = std::stoi(match[TRACE_INFO_TIMESTAMP_INT].str());
                 isFirstMatch = false;
             }

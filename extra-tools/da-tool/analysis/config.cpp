@@ -38,15 +38,16 @@ void Config::pathInit()
     filename[FILE_TYPE_FUNC_CFG] = pathInput + "/analysis_config";
 
     // output
-    filename[FILE_TYPE_OUTPUT_DELAY] = pathOutput + "/delay.csv";
+    filename[FILE_TYPE_OUTPUT_DELAY] = pathOutput + "/summary_delay.csv";
     filename[FILE_TYPE_OUTPUT_FUNC_STACK_DELALY] = pathOutput + "/func_delay_stack";
     filename[FILE_TYPE_OUTPUT_PROCESS_SCHED_INFO] = pathOutput + "/process_sched_info";
+    filename[FILE_TYPE_OUTPUT_SUMMARY_SCHED_INFO] = pathOutput + "/summary_sched.csv";
 
     // debug
     filename[FILE_TYPE_OUTPUT_RUN_LOG] = pathOutputDebug + "/run.log";
     filename[FILE_TYPE_OUTPUT_FUNC_STACK_ALL_INFO] = pathOutput + "/func_stack_all_info";
-    filename[FILE_TYPE_DEBUG_TIME_PAIE] = pathOutputDebug + "/debug_time_pair.csv";
-    filename[FILE_TYPE_DEBUG_TRACE] = pathOutputDebug + "/debug_trace.csv";
+    filename[FILE_TYPE_DEBUG_TIME_PAIE] = pathOutputDebug + "/debug_time_pair";
+    filename[FILE_TYPE_DEBUG_TRACE] = pathOutputDebug + "/debug_trace";
     filename[FILE_TYPE_DEBUG_FUNC_STACK_TRACE] = pathOutputDebug + "/debug_funcstk_trace";
     filename[FILE_TYPE_DEBUG_REGEX] = pathOutputDebug + "/debug_resolve_function_trace";
     filename[FILE_TYPE_DEBUG_CONFIG] = pathOutputDebug + "/debug_config_resolve";
@@ -161,7 +162,7 @@ void Config::configInit(int argc, char *argv[])
         case 'g':
             if (std::stoi(optarg) < DEBUG_LEVEL_MAX) {
                 debugLevel = (DEBUG_LEVEL_E)std::stoi(optarg);
-        } else {
+            } else {
                 std::cout << "debugLevel error" << std::endl;
             }
             std::cout << "debugLevel : " << debugLevel << std::endl;
@@ -172,7 +173,7 @@ void Config::configInit(int argc, char *argv[])
         default:
             std::cout << "Unrecognized option" << std::endl;
             break;
-    }
+        }
     }
 
     for (int i = optind; i < argc; ++i) {

@@ -27,6 +27,31 @@ public:
   int validEndTime;
 };
 
+typedef enum {
+  DELAY_SUMMARY_SUM,
+  DELAY_SUMMARY_MIN,
+  DELAY_SUMMARY_MAX,
+  DELAY_SUMMARY_P50,
+  DELAY_SUMMARY_P80,
+  DELAY_SUMMARY_P95,
+  DELAY_SUMMARY_P99,
+  DELAY_SUMMARY_ENUM_MAX,
+} DELAY_SUMMARY_E;
+
+typedef enum {
+  DELAY_INFO_ALL,
+  DELAY_INFO_RETVAL_GEOREQ_ZERO, // ret>=0
+  DELAY_INFO_RETVAL_LESS_ZERO,   // ret<0
+  DELAY_INFO_MAX,
+} DELAY_INFO_E;
+
+class TimePairSummary {
+public:
+  double aveDelay[DELAY_INFO_MAX];
+  int callTimes[DELAY_INFO_MAX];
+  int delay[DELAY_INFO_MAX][DELAY_SUMMARY_ENUM_MAX];
+};
+
 class TimePairInfo {
 public:
   // The time relative to the integer time of the first trace , Unit:
@@ -42,11 +67,15 @@ public:
   std::vector<int> fatherFuncPos;
   std::vector<int> childFuncTimes; // Number of calls to other functions.
   std::vector<uintptr_t> retVal;   // return value
-  std::vector<int> isInvalid;      // isInvalid=true indicates that there is no
+  std::vector<bool> isInvalid;      // isInvalid=true indicates that there is no
                                    // complete call stack data
   std::vector<std::string> strFunctionStk;
 
+  int maxStartTimeInvaild;
+  int minEndTimeInvalid;
+
   // analysis result
+  TimePairSummary summary;
   double aveDelay;
   int maxDelay;
   int minDelay;
@@ -86,6 +115,7 @@ private:
                               const int &functionIndex, const int &isRet,
                               const int &timestamp, const int &fatherFunction,
                               const int &debugPos);
+  void functionDelayUpdate();
   void functionStatisticsAnalysis();
 
   void timePairMatching();

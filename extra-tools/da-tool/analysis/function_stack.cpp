@@ -89,7 +89,7 @@ void FunctionStack::stackMapInit()
                 int maxDelay = 0;
 
                 for (int i = 0; i < len; i++) {
-                    if (funcInfo.second.isInvalid[i] == 1 || delayMap[pid][functionIndex].isStackFinish[i] == true) {
+                    if (funcInfo.second.isInvalid[i] == true || delayMap[pid][functionIndex].isStackFinish[i] == true) {
                         if (cfg.getDebugLevel() >= DEBUG_LEVEL_4) {
                             debugFile << "pid," << pid << ",functionIndex," << functionIndex << ",invalid" << std::endl;
                         }
@@ -106,7 +106,7 @@ void FunctionStack::stackMapInit()
                     }
 
                     // The time pair has already been calculated, skip next time
-                    delayMap[pid][functionIndex].isStackFinish[i] = true; 
+                    delayMap[pid][functionIndex].isStackFinish[i] = true;
 
                     std::string strFunctionStk = funcInfo.second.strFunctionStk[i];
                     int fatherFunction = funcInfo.second.fatherFunction[i];
@@ -170,13 +170,22 @@ void FunctionStack::saveFunctionStackToFile()
     }
 
     for (const auto &processInfo : funcStackMap) {
-
+        int pid = processInfo.first;
+        if (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(pid) == 0) {
+            continue;
+        }
+        if (processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL] <= 0) {
+            continue;
+        }
+        file << "pid_" + std::to_string(pid);
+        file << "; " << processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL]; // for flame graph
+        file << ",localDelaySum," << processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL];
+        file << ",localPercentage," << std::fixed << std::setprecision(3) << processDelayMap[pid].percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%";
+        file << ",globalDelaySum," << processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL];
+        file << ",globalPercentage," << std::fixed << std::setprecision(3) << processDelayMap[pid].percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "%";
+        file << std::endl;
         for (const auto &stkInfo : processInfo.second) {
-            int pid = processInfo.first;
-            if (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(pid) == 0) {
-                continue;
-                
-            }
+            
             file << "pid_" + std::to_string(pid);
             std::stringstream ss(stkInfo.first);
             std::string token;
@@ -188,14 +197,14 @@ void FunctionStack::saveFunctionStackToFile()
             }
 
             file << " " << stkInfo.second.delaySum[FS_DELAY_TYPE_LOCAL]; // for flame graph
-            file << ", localDelaySum ," << stkInfo.second.delaySum[FS_DELAY_TYPE_LOCAL];
-            file << ", localAvedelay ," << std::fixed << std::setprecision(6) << stkInfo.second.aveDelay[FS_DELAY_TYPE_LOCAL];
-            file << ", localPercentage, " << std::fixed << std::setprecision(3) << stkInfo.second.percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%";
-            file << ", globalDelaySum ," << stkInfo.second.delaySum[FS_DELAY_TYPE_GLOBAL];
-            file << ", globalAvedelay, " << std::fixed << std::setprecision(6) << stkInfo.second.aveDelay[FS_DELAY_TYPE_GLOBAL];
-            file << ", globalPercentage, " << std::fixed << std::setprecision(3) << stkInfo.second.percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "%";
-            file << ", times ," << std::setw(5) << std::setfill(' ') << stkInfo.second.num;
-            file << ", (int)ret>=0 times ," << stkInfo.second.num - stkInfo.second.retValLessZeroTimes;
+            file << ",localDelaySum," << stkInfo.second.delaySum[FS_DELAY_TYPE_LOCAL];
+            file << ",localAvedelay," << std::fixed << std::setprecision(6) << stkInfo.second.aveDelay[FS_DELAY_TYPE_LOCAL];
+            file << ",localPercentage," << std::fixed << std::setprecision(3) << stkInfo.second.percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%";
+            file << ",globalDelaySum," << stkInfo.second.delaySum[FS_DELAY_TYPE_GLOBAL];
+            file << ",globalAvedelay," << std::fixed << std::setprecision(6) << stkInfo.second.aveDelay[FS_DELAY_TYPE_GLOBAL];
+            file << ",globalPercentage," << std::fixed << std::setprecision(3) << stkInfo.second.percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "%";
+            file << ",times ," << std::setw(5) << std::setfill(' ') << stkInfo.second.num;
+            file << ",(int)ret>=0 times," << stkInfo.second.num - stkInfo.second.retValLessZeroTimes;
 
             file << std::endl;
         }
@@ -209,11 +218,7 @@ std::string getFatherFuncStk(const std::string &strFunctionStk)
 {
     size_t lastDotPos = strFunctionStk.find_last_of('.');
     if (lastDotPos != std::string::npos) {
-        if (lastDotPos == 0) {
-            return ".0";
-        } else {
-            return strFunctionStk.substr(0, lastDotPos);
-        }
+        return strFunctionStk.substr(0, lastDotPos);
     } else {
         return "";
     }
@@ -221,7 +226,6 @@ std::string getFatherFuncStk(const std::string &strFunctionStk)
 
 void FunctionStack::stackNodeMapInit()
 {
-
     for (const auto &processInfo : funcStackMap) {
         int pid = processInfo.first;
         if (stackNodeMap.count(pid) == 0) {
@@ -230,11 +234,7 @@ void FunctionStack::stackNodeMapInit()
         }
 
         for (const auto &stkInfo : processInfo.second) {
-            std::string strFunctionStk = stkInfo.first;
-            if (stackNodeMap[pid].count(strFunctionStk) != 0) {
-                StackNode node_tmp;
-                stackNodeMap[pid].emplace(strFunctionStk, node_tmp);
-            }
+            std::string strFunctionStk = ".0" + stkInfo.first;
             int func_index_tmp = 0;
             std::stringstream ss(strFunctionStk);
             std::string token;
@@ -243,67 +243,111 @@ void FunctionStack::stackNodeMapInit()
                     func_index_tmp = std::stoi(token);
                 }
             }
-            stackNodeMap[pid][strFunctionStk].functionIndex = func_index_tmp;
+
             std::string fatherFuncStk = getFatherFuncStk(strFunctionStk);
+            StackNode node_tmp;
+            if (stackNodeMap[pid].count(strFunctionStk) == 0) {
+                stackNodeMap[pid].emplace(strFunctionStk, node_tmp);
+            }
+            if (stackNodeMap[pid].count(fatherFuncStk) == 0) {
+                stackNodeMap[pid].emplace(fatherFuncStk, node_tmp);
+            }
+            stackNodeMap[pid][strFunctionStk].functionIndex = func_index_tmp;
             stackNodeMap[pid][fatherFuncStk].nextStack.emplace_back(strFunctionStk);
         }
     }
 }
 
-
-void FunctionStack::stackNodeMapDfs(int pid, int functionIndex, std::string strFunctionStk, int space_len)
+std::string removeRootStk(std::string strFunctionStk)
 {
+    return strFunctionStk.substr(2); // remove ".0"
+}
+
+void FunctionStack::stackNodeMapDfs(int pid, bool endFlag, std::string strFunctionStk, std::string headStr)
+{
+    std::string headStrTmp = headStr;
     Config &cfg = Config::getInstance();
-    TimePair &tpInst = TimePair::getInstance();
     if (strFunctionStk == ".0") {
-        std::cout << "├──pid:" << pid;
-        int pidDelay = tpInst.getProcessValidTime(pid);
-        if (pidDelay > 0) {
-            std::cout << "{(" << tpInst.getProcessValidTime(pid) << ",100.000%)}";
+        std::cout << "├──pid: " << pid;
+        if (processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL] > 0) {
+            std::cout << "{";
+            std::cout << "local:(" << processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL] << ", ";
+            std::cout << std::fixed << std::setprecision(3) << processDelayMap[pid].percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%)";
+            std::cout << ", global:(" << processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL] << ", ";
+            std::cout << std::fixed << std::setprecision(3) << processDelayMap[pid].percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "%)";
+            std::cout << "}";
         } else {
             std::cout << "  data invalid!!!";
         }
-
         std::cout << std::endl;
     } else {
-
-        for (int i = 0; i < space_len; i++) {
-            if (i % SPLIT_SPACE_LEN == 0)
-
-
-            {
-                std::cout << "│";
-            }
-            std::cout << " ";
+        std::cout << "│";
+        if (endFlag == false) {
+            headStrTmp += "│";
         }
-        std::cout << "├─────" << cfg.IndexToFunction[stackNodeMap[pid][strFunctionStk].functionIndex];
+        for (int i = 1; i < SPLIT_SPACE_LEN; i++) {
+            std::cout << " ";
+            headStrTmp += " ";
+        }
+        std::cout << headStr;
+        if (endFlag == false) {
+            std::cout << "├─────";
+        } else {
+            std::cout << "└─────";
+        }
+
+        std::cout << cfg.IndexToFunction[stackNodeMap[pid][strFunctionStk].functionIndex];
         std::cout << "{";
-        std::cout << "(local: " << funcStackMap[pid][strFunctionStk].delaySum[FS_DELAY_TYPE_LOCAL] << ", " << std::fixed << std::setprecision(3) << funcStackMap[pid][strFunctionStk].percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%, " << funcStackMap[pid][strFunctionStk].aveDelay[FS_DELAY_TYPE_LOCAL] << ")";
-        std::cout << "(global:" << funcStackMap[pid][strFunctionStk].delaySum[FS_DELAY_TYPE_GLOBAL] << ", " << std::fixed << std::setprecision(3) << funcStackMap[pid][strFunctionStk].percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "% ," << funcStackMap[pid][strFunctionStk].aveDelay[FS_DELAY_TYPE_GLOBAL] << ")";
-        std::cout << ", times:" << funcStackMap[pid][strFunctionStk].num;
-        std::cout << ", (int)ret>=0 times:" << funcStackMap[pid][strFunctionStk].num - funcStackMap[pid][strFunctionStk].retValLessZeroTimes;
+        std::string noRootStk = removeRootStk(strFunctionStk);
+        std::cout << "local:(" << funcStackMap[pid][noRootStk].delaySum[FS_DELAY_TYPE_LOCAL] << ", ";
+        std::cout << std::fixed << std::setprecision(3) << funcStackMap[pid][noRootStk].percentage[FS_DELAY_TYPE_LOCAL] * 100 << "%, ";
+        std::cout << funcStackMap[pid][noRootStk].aveDelay[FS_DELAY_TYPE_LOCAL] << ")";
+        std::cout << ", global:(" << funcStackMap[pid][noRootStk].delaySum[FS_DELAY_TYPE_GLOBAL] << ", ";
+        std::cout << std::fixed << std::setprecision(3) << funcStackMap[pid][noRootStk].percentage[FS_DELAY_TYPE_GLOBAL] * 100 << "%, ";
+        std::cout << funcStackMap[pid][noRootStk].aveDelay[FS_DELAY_TYPE_GLOBAL] << ")";
+        std::cout << ", times:" << funcStackMap[pid][noRootStk].num;
+        std::cout << ", (int)ret>=0 times:" << funcStackMap[pid][noRootStk].num - funcStackMap[pid][noRootStk].retValLessZeroTimes;
         std::cout << "}" << std::endl;
     }
 
-    for (const auto &nextStack : stackNodeMap[pid][strFunctionStk].nextStack) {
-        stackNodeMapDfs(pid, stackNodeMap[pid][strFunctionStk].functionIndex, nextStack, space_len + SPLIT_SPACE_LEN);
+    int len = stackNodeMap[pid][strFunctionStk].nextStack.size();
+    for (int i = 0; i < len; i++) {
+        stackNodeMapDfs(pid, i == (len - 1), stackNodeMap[pid][strFunctionStk].nextStack[i], headStrTmp);
     }
+}
 
+void FunctionStack::processDelayAnalysis()
+{
+    TimePair &tpInst = TimePair::getInstance();
+    for (const auto &processInfo : stackNodeMap) {
+        int pid = processInfo.first;
+        if (processDelayMap.count(pid) == 0) {
+            ProcessDelay delaytmp;
+            processDelayMap.emplace(pid, delaytmp);
+        }
+        processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL] = tpInst.getProcessValidTime(pid);
+        processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL] = tpInst.getProcessValidTime(pid);
+        for (const auto &firstStack : stackNodeMap[pid][".0"].nextStack) {
+            std::string noRootStk = removeRootStk(firstStack);
+            processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL] -= funcStackMap[pid][noRootStk].delaySum[FS_DELAY_TYPE_GLOBAL];
+
+        }
+        processDelayMap[pid].percentage[FS_DELAY_TYPE_LOCAL] = \
+            processDelayMap[pid].delaySum[FS_DELAY_TYPE_LOCAL] * 1.0 / processDelayMap[pid].delaySum[FS_DELAY_TYPE_GLOBAL];
+        processDelayMap[pid].percentage[FS_DELAY_TYPE_GLOBAL] = 1.0;
+    }
 }
 
 void FunctionStack::stackNodeMapDisplay()
 {
     Config &cfg = Config::getInstance();
     std::cout << "Display the function delay of each pid " << std::endl;
-    // std::cout << "format:function symbol{( delay sum (microsecond) ,percentage(occupy the entire pid runtime) ),average delay | num in trace}" << std::endl;
     for (const auto &processInfo : stackNodeMap) {
         int pid = processInfo.first;
         if (cfg.filterCfgMap.size() == 0 || cfg.filterCfgMap.count(pid) != 0) {
-            std::cout << "───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────" << std::endl;
-            stackNodeMapDfs(processInfo.first, 0, ".0", SPLIT_SPACE_LEN);
-            std::cout << "───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────" << std::endl;
+            std::cout << "│" << std::endl;
+            stackNodeMapDfs(processInfo.first, 0, ".0", "");
         }
-
     }
     std::cout << std::endl;
 }
@@ -313,8 +357,9 @@ void FunctionStack::function_stack_proc()
     delayMapInit();
     stackMapInit();
     stackMapAnalysis();
-    saveFunctionStackToFile();
 
     stackNodeMapInit();
+    processDelayAnalysis();
     stackNodeMapDisplay();
+    saveFunctionStackToFile();
 }
