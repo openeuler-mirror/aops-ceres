@@ -52,8 +52,15 @@ public:
   std::vector<int> delay;
 };
 
+class ProcessDelay {
+public:
+  int delaySum[FS_DELAY_TYPE_MAX];
+  double percentage[FS_DELAY_TYPE_MAX];
+};
+
 class StackNode {
 public:
+  // if stk .0.1.2.3 , then .0.1's nextStack is .0.1.2 , functionIndex is 1
   int functionIndex;
   std::vector<std::string> nextStack;
 };
@@ -70,24 +77,24 @@ public:
   ~FunctionStack() {}
 
 private:
+  std::unordered_map<int, ProcessDelay> processDelayMap;
   std::unordered_map<int, std::unordered_map<std::string, StackInfo>>
       funcStackMap; // [pid][strFunctionStk]
   std::unordered_map<int, std::unordered_map<int, FsDelayInfo>>
       delayMap; // [pid][functionIndex] , copy from trace_reslove
   void delayMapInit();
   void stackMapInit();
+  void processDelayAnalysis();
 
   void stackMapAnalysis();
   void saveFunctionStackToFile();
 
 private: // stack node
   std::unordered_map<int, std::unordered_map<std::string, StackNode>>
-      stackNodeMap; // [pid][strFunctionStk]
+      stackNodeMap; // [pid][".0" + strFunctionStk]
   void stackNodeMapInit();
   void stackNodeMapDisplay();
-  void stackNodeMapDfs(int pid, int functionIndex, std::string strFunctionStk,
-                       int space_len);
-
+  void stackNodeMapDfs(int pid, bool endFlag, std::string strFunctionStk, std::string headStr);
 public:
   void function_stack_proc();
 };

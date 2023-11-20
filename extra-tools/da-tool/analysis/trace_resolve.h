@@ -38,13 +38,6 @@ typedef enum
     PROCESS_STATE_MAX,
 } PROCESS_STATE_E;
 
-typedef enum {
-  LINE_TYPE_FUNC,
-  LINE_TYPE_SCHED_SWITCH,
-  LINE_TYPE_SCHED_SWITCH_RET,
-  LINE_TYPE_MAX,
-} LINE_TYPE_E;
-
 class SchedSwitchLine {
 public:
   int prevPid;

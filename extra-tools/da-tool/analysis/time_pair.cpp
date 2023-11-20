@@ -48,6 +48,16 @@ typedef enum {
     TRACE_INFO_SHCEMAX,
 } TRACE_INFO_SCHED_SWITCH_E;
 
+typedef enum {
+    DEBUG_POS_0,
+    DEBUG_POS_1,
+    DEBUG_POS_2,
+    DEBUG_POS_3,
+    DEBUG_POS_4,
+    DEBUG_POS_5,
+    DEBUG_POS_MAX,
+} DEBUG_POS_E;
+
 TimePair::TimePair()
 {
 }
@@ -91,38 +101,35 @@ void TimePair::saveFuncStkDebugToFile(std::ofstream &file, const int &pid, const
 }
 int TimePair::getFatherFunctionIdLoop(const int &pid, const int &functionIndex, const int &isRet, int &debugPos)
 {
-    debugPos = 0;
+    debugPos = DEBUG_POS_0;
 
-    if (funcStkMap.count(pid) == 0)
-    {
+    if (funcStkMap.count(pid) == 0) {
         std::vector<int> tmp;
         funcStkMap.emplace(pid, tmp);
     }
 
-    if (funcStkMap[pid].size() == 0)
-    {
+    if (funcStkMap[pid].size() == 0) {
         if (isRet) // stk empty
         {
-            debugPos = 1;
+            debugPos = DEBUG_POS_1;
             return 0;
         } else {
             funcStkMap[pid].emplace_back(functionIndex);
-            debugPos = 2;
+            debugPos = DEBUG_POS_2;
         }
     } else {
-        if (funcStkMap[pid][funcStkMap[pid].size() - 1] == functionIndex) // stk not empty
-        {
+        if (funcStkMap[pid][funcStkMap[pid].size() - 1] == functionIndex) { // stk not empty
             funcStkMap[pid].pop_back(); // match ,pop
             if (funcStkMap[pid].size() > 0) {
-                debugPos = 3;
+                debugPos = DEBUG_POS_3;
                 return funcStkMap[pid][funcStkMap[pid].size() - 1];
             } else {
-                debugPos = 4;
+                debugPos = DEBUG_POS_4;
                 return 0; //  can't find father function
             }
         } else { // function unmath , push
             funcStkMap[pid].emplace_back(functionIndex);
-            debugPos = 5;
+            debugPos = DEBUG_POS_5;
             return funcStkMap[pid][funcStkMap[pid].size() - 2];
         }
     }
@@ -140,18 +147,20 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
 
     if (timePairMap[pid].count(functionIndex) == 0) {
         TimePairInfo infoTmp;
+        infoTmp.maxStartTimeInvaild = 0;
+        infoTmp.minEndTimeInvalid = INT_MAX;
         timePairMap[pid].emplace(functionIndex, infoTmp);
     }
 
     if (isRet) {
-        if (timePairMap[pid][functionIndex].startTime.size() == 0) //  fist is endtime ,startime=endtime
-        {
+        if (timePairMap[pid][functionIndex].startTime.size() == 0) { //  fist is endtime ,startime=endtime
             timePairMap[pid][functionIndex].startTime.emplace_back(timestamp);
             timePairMap[pid][functionIndex].childFuncTimes.emplace_back(0);
             timePairMap[pid][functionIndex].strFunctionStk.emplace_back('.' + std::to_string(functionIndex));
             timePairMap[pid][functionIndex].fatherFunction.emplace_back(0);
             timePairMap[pid][functionIndex].fatherFuncPos.emplace_back(-1);
-            timePairMap[pid][functionIndex].isInvalid.emplace_back(1); // only have retval , invalid
+            timePairMap[pid][functionIndex].isInvalid.emplace_back(true); // only have retval , invalid
+            timePairMap[pid][functionIndex].maxStartTimeInvaild = timestamp;
         }  // Be careful when adding else branches. Only when there is no exit at the entrance, you will not be able to enter else
         timePairMap[pid][functionIndex].endTime.emplace_back(timestamp);
         if (line_info_tmp.args.size() != 0) {
@@ -162,13 +171,10 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
     } else {
         timePairMap[pid][functionIndex].startTime.emplace_back(timestamp);
         timePairMap[pid][functionIndex].childFuncTimes.emplace_back(0);
-
         std::string father_func_stk = fatherFunction != 0 ? \
             timePairMap[pid][fatherFunction].strFunctionStk[timePairMap[pid][fatherFunction].strFunctionStk.size() - 1] : "";
-
         std::string strFunctionStk = father_func_stk + '.' + std::to_string(functionIndex);
         timePairMap[pid][functionIndex].strFunctionStk.emplace_back(strFunctionStk);
-
         timePairMap[pid][functionIndex].fatherFunction.emplace_back(fatherFunction);
         int fatherFuncPos = 0;
         if (fatherFunction == 0) {
@@ -178,8 +184,7 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
             timePairMap[pid][fatherFunction].childFuncTimes[fatherFuncPos]++;
         }
         timePairMap[pid][functionIndex].fatherFuncPos.emplace_back(fatherFuncPos);
-
-        timePairMap[pid][functionIndex].isInvalid.emplace_back(0);
+        timePairMap[pid][functionIndex].isInvalid.emplace_back(false);
     }
 }
 
@@ -199,6 +204,7 @@ void TimePair::timePairAlignment()
     for (auto &processInfo : timePairMap) {
         for (auto &funcInfo : processInfo.second) {
             int diffLen = funcInfo.second.startTime.size() - funcInfo.second.endTime.size();
+            bool updateEndTimeInvalid = false;
             if (diffLen == 0) {
                 if (isOutputDebugFile) {
                     file << diffLen << "," << processInfo.first << " ," << funcInfo.first << " ," << \
@@ -215,8 +221,7 @@ void TimePair::timePairAlignment()
                 }
             } else {
                 if (isOutputDebugFile) {
-                    if (diffLen > 1) 
-                    {
+                    if (diffLen > 1) {
                         // A normal trace usually does not have a startTime greater than endtime dimension greater than 1, 
                         // indicating that a function has not returned and has been pushed back onto the stack.
                         file << "run error(diffLen>1)!!!,";
@@ -225,7 +230,12 @@ void TimePair::timePairAlignment()
                         funcInfo.second.startTime.size() << " ," << funcInfo.second.endTime.size() << std::endl;
                 }
                 for (int i = 0; i < diffLen; i++) {
-                    funcInfo.second.endTime.emplace_back(funcInfo.second.startTime[funcInfo.second.startTime.size() - diffLen + i]);
+                    int endTime = funcInfo.second.startTime[funcInfo.second.startTime.size() - diffLen + i];
+                    funcInfo.second.endTime.emplace_back(endTime);
+                    if (updateEndTimeInvalid == false) {
+                        funcInfo.second.minEndTimeInvalid = endTime;
+                        updateEndTimeInvalid = true;
+                    }
                 }
             }
         }
@@ -236,52 +246,50 @@ void TimePair::timePairAlignment()
 
 void TimePair::timePairMarkInvalidData()
 {
-    // Find each function from front to back, find the first time pair that is not equal as the starting time point of the function, 
-    // and then compare the maximum of each function as the global starting time point of the pid
-    // Find each function from the back to the front, find the first time pair that is not equal as the end time point of the function, 
-    // and then compare the smallest of each function as the global end point of the pid
     for (auto &processInfo : timePairMap) {
         int pid = processInfo.first;
         VaildRange vr_tmp;
         validTimeOfPid.emplace(pid, vr_tmp);
-        int validStartTime = 0;
-        int validEndTime = INT_MAX;
+        int validStartTime = INT_MAX;
+        int validEndTime = 0;
+        int maxInvalidStartTime = 0;
+        int minInvalidEndTime = INT_MAX;
 
+        // maxInvalidStartTime choose max value of every func
+        for (const auto &funcInfo : processInfo.second) {
+            if (funcInfo.second.maxStartTimeInvaild > maxInvalidStartTime) {
+                maxInvalidStartTime = funcInfo.second.maxStartTimeInvaild;
+            }
+            if (funcInfo.second.minEndTimeInvalid < minInvalidEndTime) {
+                minInvalidEndTime = funcInfo.second.minEndTimeInvalid;
+            }
+        }
+        //  [start, maxInvalidStartTime] and [minInvalidEndTime, end] data invalid
         for (auto &funcInfo : processInfo.second) {
             for (int i = 0; i < funcInfo.second.startTime.size(); i++) {
-                if (funcInfo.second.endTime[i] - funcInfo.second.startTime[i] > 0) {
-                    if (funcInfo.second.startTime[i] > validStartTime) {
+                if (funcInfo.second.startTime[i] <= maxInvalidStartTime) {
+                    funcInfo.second.isInvalid[i] = true;
+                }
+                if (funcInfo.second.endTime[i] >= minInvalidEndTime) {
+                    funcInfo.second.isInvalid[i] = true;
+                }
+            }
+        }
+
+        for (const auto &funcInfo : processInfo.second) {
+            for (int i = 0; i < funcInfo.second.startTime.size(); i++) {
+                if (funcInfo.second.isInvalid[i] != true) {
+                    if (funcInfo.second.startTime[i] <= validStartTime) {
                         validStartTime = funcInfo.second.startTime[i];
                     }
-                    break;
-                }
-            }
-
-            for (int i = funcInfo.second.startTime.size() - 1; i >= 0; i--) {
-                if (funcInfo.second.endTime[i] - funcInfo.second.startTime[i] > 0) {
-                    if (funcInfo.second.endTime[i] < validEndTime) {
+                    if (funcInfo.second.endTime[i] >= validEndTime) {
                         validEndTime = funcInfo.second.endTime[i];
                     }
-                    break;
                 }
             }
         }
-
-
         validTimeOfPid[pid].validStartTime = validStartTime;
         validTimeOfPid[pid].validEndTime = validEndTime;
-
-        //  [validStartTime,validEndTime] out range invalid
-        for (auto &funcInfo : processInfo.second) {
-            for (int i = 0; i < funcInfo.second.startTime.size(); i++) {
-                if (funcInfo.second.startTime[i] < validStartTime) {
-                    funcInfo.second.isInvalid[i] = 1;
-                }
-                if (funcInfo.second.endTime[i] > validEndTime) {
-                    funcInfo.second.isInvalid[i] = 1;
-                }
-            }
-        }
     }
 
     Config &cfg = Config::getInstance();
@@ -340,49 +348,69 @@ void TimePair::timePairMatching()
     file.close();
 }
 
+void TimePair::functionDelayUpdate()
+{
+    for (auto &processInfo : timePairMap) {
+        for (auto &funcInfo : processInfo.second) {
+            for (int i = 0; i < funcInfo.second.startTime.size(); i++) {
+                funcInfo.second.delay.emplace_back(funcInfo.second.endTime[i] - funcInfo.second.startTime[i]);
+            }
+        }
+    }
+}
+
 void TimePair::functionStatisticsAnalysis()
 {
     for (auto &processInfo : timePairMap) {
         for (auto &funcInfo : processInfo.second) {
-            int maxDelay = 0;
-            int minDelay = INT_MAX;
-            int delaySum = 0;
-            int maxDelayPos = 0;
-            int minDelayPos = 0;
-            int len = funcInfo.second.startTime.size();
-            int valid_len = 0;
+            std::vector<int> delayTmp[DELAY_INFO_MAX];
+            int len = funcInfo.second.delay.size();
+            int delaySum[DELAY_INFO_MAX] = { 0 };
             for (int i = 0; i < len; i++) {
-
-                int delay = funcInfo.second.endTime[i] - funcInfo.second.startTime[i];
-                funcInfo.second.delay.emplace_back(delay);
-                int isInvalid = funcInfo.second.isInvalid[i];
-                if (isInvalid) {
+                if (funcInfo.second.isInvalid[i]) {
                     continue;
                 }
-
-                if (maxDelay < delay) {
-                    maxDelay = delay;
-                    maxDelayPos = i;
+                int delay = funcInfo.second.delay[i];
+                delayTmp[DELAY_INFO_ALL].emplace_back(delay);
+                delaySum[DELAY_INFO_ALL] += delay;
+                if ((int)funcInfo.second.retVal[i] < 0) {
+                    delayTmp[DELAY_INFO_RETVAL_LESS_ZERO].emplace_back(delay);
+                    delaySum[DELAY_INFO_RETVAL_LESS_ZERO] += delay;
+                } else {
+                    delayTmp[DELAY_INFO_RETVAL_GEOREQ_ZERO].emplace_back(delay);
+                    delaySum[DELAY_INFO_RETVAL_GEOREQ_ZERO] += delay;
                 }
-                if (minDelay > delay) {
-                    minDelay = delay;
-                    minDelayPos = i;
-                }
-
-                delaySum += delay;
-                valid_len++;
             }
-
-            funcInfo.second.aveDelay = valid_len == 0 ? 0.0 : delaySum * 1.0 / valid_len;
-            funcInfo.second.minDelay = minDelay;
-            funcInfo.second.maxDelay = maxDelay;
-            funcInfo.second.maxDelayPos = maxDelayPos;
-            funcInfo.second.minDelayPos = minDelayPos;
-            funcInfo.second.delaySum = delaySum;
-            funcInfo.second.callTimes = valid_len;
+            for (int i = 0; i < DELAY_INFO_MAX; i++) {
+                DELAY_INFO_E type = (DELAY_INFO_E)i;
+                sort(delayTmp[type].begin(), delayTmp[type].end());
+                int valid_len = delayTmp[type].size();
+                if (valid_len > 0) {
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_SUM] = delaySum[type];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_MIN] = delayTmp[type][0];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_MAX] = delayTmp[type][valid_len - 1];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P50] = delayTmp[type][ceil(0.50 * valid_len) - 1];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P80] = delayTmp[type][ceil(0.80 * valid_len) - 1];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P95] = delayTmp[type][ceil(0.95 * valid_len) - 1];
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P99] = delayTmp[type][ceil(0.99 * valid_len) - 1];
+                    funcInfo.second.summary.callTimes[type] = valid_len;
+                    funcInfo.second.summary.aveDelay[type] = delaySum[type] * 1.0 / valid_len;
+                } else {
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_SUM] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_MIN] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_MAX] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P50] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P80] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P95] = 0;
+                    funcInfo.second.summary.delay[type][DELAY_SUMMARY_P99] = 0;
+                    funcInfo.second.summary.callTimes[type] = 0;
+                    funcInfo.second.summary.aveDelay[type] = 0;
+                }
+            }
         }
     }
 }
+
 void TimePair::saveTimePairToFile()
 {
     Config &cfg = Config::getInstance();
@@ -454,44 +482,46 @@ void TimePair::saveTimePairToFile()
 void TimePair::saveDelayInfoToFile()
 {
     Config &cfg = Config::getInstance();
-    if (cfg.getDebugLevel() < DEBUG_LEVEL_1) {
-        return;
-    }
     std::ofstream file(cfg.filename[FILE_TYPE_OUTPUT_DELAY], std::ios::out | std::ios::trunc);
     if (!file) {
         std::cout << "file open failed:" << cfg.filename[FILE_TYPE_OUTPUT_DELAY] << std::endl;
         return;
     }
 
-    bool is_filter = true;
-    if (cfg.getDebugLevel() < DEBUG_LEVEL_3) {
-        is_filter = false;
-    }
     TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
+    file << "note : (r>=0) => (int)return value >=0; ave => average delay,";
+    file << "pid,function,";
+    file << "call_times,ave,sum,min,max,p50,p80,p95,p99,";
+    file << "call_times(r>=0),ave(r>=0),sum(r>=0),min(r>=0),max(r>=0),p50(r>=0),p80(r>=0),p95(r>=0),p99(r>=0),";
+    file << "call_times(r<0),ave(r<0),sum(r<0),min(r<0),max(r<0),p50(r<0),p80(r<0),p95(r<0),p99(r<0),";
+    file << std::endl;
     for (const auto &processInfo : timePairMap) {
         for (const auto &funcInfo : processInfo.second) {
-            if (!is_filter || (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(processInfo.first) == 0)) {
+            if (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(processInfo.first) == 0) {
                 continue;
             }
-            file << "pid:" << processInfo.first << "," << std::endl;
-            file << "functionIndex:" << funcInfo.first << "," << cfg.IndexToFunction[funcInfo.first] << std::endl;
+            if (funcInfo.second.summary.callTimes[DELAY_INFO_ALL] <= 0) {
+                continue;
+            }
+            file << "," << processInfo.first << ",";
+            file << cfg.IndexToFunction[funcInfo.first] << ",";
 
-            file << "aveDelay:" << funcInfo.second.aveDelay << std::endl;
-            file << "maxDelay:" << funcInfo.second.maxDelay << std::endl;
-            file << "minDelay:" << funcInfo.second.minDelay << std::endl;
-            file << "delaySum:" << funcInfo.second.delaySum << std::endl;
-
-            file << "call times:" << funcInfo.second.callTimes << std::endl;
-            file << "max_delay_at:" << std::fixed << std::setprecision(6) << \
-                trace_resolve_inst.convertTimeIntToDouble(funcInfo.second.startTime[funcInfo.second.maxDelayPos]) << std::endl;
-            file << "min_delay_at:" << std::fixed << std::setprecision(6) << \
-                trace_resolve_inst.convertTimeIntToDouble(funcInfo.second.startTime[funcInfo.second.minDelayPos]) << std::endl;
+            for (int i = 0; i < DELAY_INFO_MAX; i++) {
+                DELAY_INFO_E infoType = (DELAY_INFO_E)i;
+                file << funcInfo.second.summary.callTimes[infoType] << ",";
+                file << std::fixed << std::setprecision(3) << funcInfo.second.summary.aveDelay[infoType] << ",";
+                for (int j = 0; j < DELAY_SUMMARY_ENUM_MAX; j++) {
+                    DELAY_SUMMARY_E summaryType = (DELAY_SUMMARY_E)j;
+                    file << funcInfo.second.summary.delay[infoType][summaryType] << ",";
+                }
+            }
             file << std::endl;
         }
     }
 
     file.close();
 }
+
 
 int TimePair::getProcessValidTime(const int &pid)
 {
@@ -502,6 +532,7 @@ int TimePair::getProcessValidTime(const int &pid)
     }
 
 }
+
 void TimePair::timePairAnalysis()
 {
     // step 1 : convert trace to time pair
@@ -511,10 +542,9 @@ void TimePair::timePairAnalysis()
     // step 3 : mark date whether invalid
     timePairMarkInvalidData();
     // step 4: compute statistics rst
+    functionDelayUpdate();
     functionStatisticsAnalysis();
-
     // step 5: save rst
     saveTimePairToFile();
     saveDelayInfoToFile();
-
 }

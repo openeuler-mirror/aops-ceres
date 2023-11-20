@@ -24,23 +24,18 @@ int main(int argc, char *argv[])
     cout << "analysis start..." << endl;
     Config &cfg = Config::getInstance();
     cfg.configInit(argc, argv);
-    cout << "analysis Config completed" << endl;
-
+    cout << "analysis resolve..." << endl;
     TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
     trace_resolve_inst.trace_resolve_proc();
-    cout << "analysis resolve completed" << endl;
 
     TimePair &tpInst = TimePair::getInstance();
     tpInst.timePairAnalysis();
-    cout << "analysis time pair completed" << endl;
 
     SchedAnalysis &schedAnalysisInst = SchedAnalysis::getInstance();
     schedAnalysisInst.schedAnalysisProc();
-    cout << "analysis sched completed" << endl;
 
     FunctionStack &fstk = FunctionStack::getInstance();
     fstk.function_stack_proc();
-    cout << "analysis FunctionStack completed" << endl;
     cout << "analysis finish" << endl;
     return 0;
 }

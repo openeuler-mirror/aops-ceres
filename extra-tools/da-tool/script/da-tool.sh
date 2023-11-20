@@ -252,7 +252,7 @@ function clear_env() {
 function sample_init() {
 	echo 0 >/sys/kernel/debug/tracing/tracing_on
 	echo >/sys/kernel/debug/tracing/trace
-	echo 4096 >/sys/kernel/debug/tracing/buffer_size_kb
+	echo 40960 >/sys/kernel/debug/tracing/buffer_size_kb
 
 	echo >/sys/kernel/debug/tracing/uprobe_events
 	echo >/sys/kernel/debug/tracing/kprobe_events
