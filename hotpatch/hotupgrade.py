@@ -12,17 +12,19 @@
 # ******************************************************************************/
 from __future__ import print_function
 
+from time import sleep
+
 import dnf.base
 import dnf.exceptions
 import hawkey
-from time import sleep
 from dnf.cli import commands
 from dnf.cli.option_parser import OptionParser
 from dnfpluginscore import _, logger
-from .upgrade_en import UpgradeEnhanceCommand
+
 from .hot_updateinfo import HotUpdateinfoCommand
-from .updateinfo_parse import HotpatchUpdateInfo
 from .syscare import Syscare
+from .updateinfo_parse import HotpatchUpdateInfo
+from .upgrade_en import UpgradeEnhanceCommand
 from .version import Versions
 
 EMPTY_TAG = "-"
@@ -184,6 +186,7 @@ class HotupgradeCommand(dnf.cli.Command):
         output, status = self.syscare.apply(hp_subname)
         if status:
             logger.info(_('Apply hot patch failed: %s.'), hp_subname)
+            logger.info(_('%s'), output)
         else:
             logger.info(_('Apply hot patch succeed: %s.'), hp_subname)
         return status

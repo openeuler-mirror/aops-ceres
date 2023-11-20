@@ -10,13 +10,14 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-import dnf
 import gzip
 import subprocess
-from dnfpluginscore import _
+
+import dnf
 from dnf.cli import commands
 from dnf.cli.commands.upgrade import UpgradeCommand
 from dnf.cli.option_parser import OptionParser
+from dnfpluginscore import _, logger
 
 SUCCEED = 0
 FAIL = 255
@@ -111,10 +112,11 @@ class UpgradeEnhanceCommand(dnf.cli.Command):
         output, return_code = cmd_output(remove_cmd)
         if return_code != SUCCEED:
             print('Remove package failed: %s.' % pkg)
+            print(output)
             exit(1)
         else:
             print('Remove package succeed: %s.' % pkg)
-            # do not achieve the expected result of installing related kernel rpm
+            # do not achieve the expected result of installing related rpm
             exit(1)
 
     def rebuild_rpm_db(self):
