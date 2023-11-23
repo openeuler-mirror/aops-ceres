@@ -74,9 +74,18 @@ handle_error() {
 
 trap 'handle_error' ERR
 
+function usage() {
+	echo ""
+	echo "usage: da-tool.sh [OPTIONS] [ARGS]"
+	echo ""
+	echo "The most commonly used da-tool.sh options are:"
+	echo "  -t <duration>      set tracing duration, unit: seconds, 1<=duration<=100, default is 10"
+	echo "  -h                 show usage"
+}
+
 # get opt
 # while getopts "b:l:t:p:as" opt; do # debug
-while getopts "t:" opt; do
+while getopts "t:h" opt; do
 	case $opt in
 	a)
 		is_analysis_only_mode=true
@@ -87,7 +96,12 @@ while getopts "t:" opt; do
 		is_sample_with_analysis=false
 		;;
 	t)
-		sleep_time=$OPTARG
+		if [[ $OPTARG =~ ^[0-9]+$ ]]; then
+			sleep_time=$OPTARG
+		else
+			usage
+			exit 1
+		fi
 		;;
 	p)
 		parameter="$OPTARG"
@@ -96,8 +110,13 @@ while getopts "t:" opt; do
 			pid_filter+=("$value")
 		done
 		;;
+	h)
+		usage
+		exit 1
+		;;
 	\?)
 		echo "Invalid option: -$OPTARG" >&2
+		usage
 		exit 1
 		;;
 	esac
@@ -128,6 +147,37 @@ function config_display() {
 		spl_begin=${spl_end}
 		user_bin_num=$((user_bin_num + 1))
 	done
+}
+
+function arr_repet_ele_check() {
+	local arr=("$@")
+	for element in "${arr[@]}"; do
+		count=$(printf '%s\n' "${arr[@]}" | grep -c -w "$element")
+		if [ $count -ge 2 ]; then
+			echo " '$element' duplicate configuration, please check '$config_file'"
+			exit 1
+		fi
+	done
+}
+
+function config_file_check() {
+	arr_repet_ele_check ${kernel_symbols[@]} # check kernel
+	arr_repet_ele_check ${sched_symbols[@]}  # check sched
+
+	spl_begin=0
+	declare -a target_path_tmp
+	declare -a user_symbols_arr_tmp
+	for ((i = 0; i < ${#user_symbols_arr_split[@]}; i++)); do
+		spl_end=${user_symbols_arr_split[$i]}
+		unset user_symbols_arr_tmp
+		target_path_tmp[${#target_path_tmp[*]}]=${user_symbols_arr[$((${spl_begin}))]}${user_symbols_arr[$((${spl_begin} + 1))]}
+		for ((j = ${spl_begin} + 2; j < ${spl_end}; j++)); do
+			user_symbols_arr_tmp[${#user_symbols_arr_tmp[*]}]=${user_symbols_arr[$j]}
+		done
+		spl_begin=${spl_end}
+		arr_repet_ele_check ${user_symbols_arr_tmp[@]} # check user symbol of same bin
+	done
+	arr_repet_ele_check "${target_path_tmp[@]}" # check bin
 }
 
 function config_file_resolve() {
@@ -166,6 +216,7 @@ function config_file_resolve() {
 	mkdir -p $sample_log_dir
 	touch $sample_log
 	config_display
+	config_file_check
 }
 
 function gen_config_for_analysis() {
@@ -191,13 +242,15 @@ function gen_config_for_analysis() {
 function opt_check() {
 	if [ $is_uprobe_sample = false ] && [ $is_kprobe_sample = false ]; then
 		echo "use -m u|k|uk to set uprobe/kprobe/both"
+		usage
 		exit 1
 	fi
 
-    if [ $sleep_time -ge $((sleep_time_max+1)) ] || [ $sleep_time -le 0 ];then
-        echo "sampling time should > 0 and <= $sleep_time_max"
-        exit 1
-    fi
+	if [ $sleep_time -ge $((sleep_time_max + 1)) ] || [ $sleep_time -le 0 ]; then
+		echo "sampling time should > 0 and <= $sleep_time_max"
+		usage
+		exit 1
+	fi
 }
 
 function clear_env() {
@@ -462,6 +515,6 @@ echo >/sys/kernel/debug/tracing/uprobe_events
 echo >/sys/kernel/debug/tracing/kprobe_events
 echo "sample finish"
 
-if [ $is_sample_with_analysis = true ]; then # only sample
+if [ $is_sample_with_analysis = true ]; then
 	trace_analysis
 fi
