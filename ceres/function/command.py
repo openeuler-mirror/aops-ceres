@@ -133,12 +133,12 @@ def collect_command_manage(args):
 def plugin_command_manage(args):
     if args.start:
         if args.start not in INSTALLABLE_PLUGIN:
-            LOGGER.error("unsupported plugin, please check and try again")
+            LOGGER.error("Unsupported plugin, please check and try again")
             exit(1)
         print(plugin_manage.Plugin(args.start).start_service())
     elif args.stop:
         if args.stop not in INSTALLABLE_PLUGIN:
-            LOGGER.error("unsupported plugin, please check and try again")
+            LOGGER.error("Unsupported plugin, please check and try again")
             exit(1)
         print(plugin_manage.Plugin(args.stop).stop_service())
     elif args.change_collect_items:
