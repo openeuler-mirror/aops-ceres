@@ -21,10 +21,10 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    cout << "analysis start..." << endl;
+    cout << "[STEP 2] analysis start..." << endl;
     Config &cfg = Config::getInstance();
     cfg.configInit(argc, argv);
-    cout << "analysis resolve..." << endl;
+    cout << "[STEP 2-1] resolve trace..." << endl;
     TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
     trace_resolve_inst.trace_resolve_proc();
 
@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
 
     FunctionStack &fstk = FunctionStack::getInstance();
     fstk.function_stack_proc();
-    cout << "analysis finish" << endl;
+
+    trace_resolve_inst.trace_check_show();
+    cout << "[STEP 2-2] analysis finish" << endl;
     return 0;
 }

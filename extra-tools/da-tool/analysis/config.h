@@ -26,7 +26,6 @@ typedef enum {
   FILE_TYPE_OUTPUT_DELAY,
   FILE_TYPE_OUTPUT_RUN_LOG,
   FILE_TYPE_OUTPUT_FUNC_STACK_DELALY,
-  FILE_TYPE_OUTPUT_FUNC_STACK_ALL_INFO,
   FILE_TYPE_OUTPUT_PROCESS_SCHED_INFO,
   FILE_TYPE_OUTPUT_SUMMARY_SCHED_INFO,
 
@@ -109,7 +108,7 @@ public: // function cfg
       std::vector<std::string>(FILE_TYPE_MAX, "")};
 
   int readTraceBegin;
-  int readTraceEnd;
+  int readTraceLen;
   void configInit(int argc, char *argv[]);
   DEBUG_LEVEL_E getDebugLevel();
 };

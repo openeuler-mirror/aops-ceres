@@ -341,7 +341,7 @@ void FunctionStack::processDelayAnalysis()
 void FunctionStack::stackNodeMapDisplay()
 {
     Config &cfg = Config::getInstance();
-    std::cout << "Display the function delay of each pid " << std::endl;
+    std::cout << "[INFO] display the function delay of each pid " << std::endl;
     for (const auto &processInfo : stackNodeMap) {
         int pid = processInfo.first;
         if (cfg.filterCfgMap.size() == 0 || cfg.filterCfgMap.count(pid) != 0) {

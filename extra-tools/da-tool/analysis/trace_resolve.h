@@ -23,18 +23,8 @@
 // include\linux\sched.h
 typedef enum
 {
-    PROCESS_STATE_TASK_RUNNING,           // R			
-    PROCESS_STATE_TASK_INTERRUPTIBLE,     // S		
-//    PROCESS_STATE_TASK_UNINTERRUPTIBL,  // D
-//    PROCESS_STATE_TASK_STOPPED,		  // T
-//    PROCESS_STATE_TASK_TRACED,		  //t
-//
-//    PROCESS_STATE_EXIT_DEAD,		// X
-//    PROCESS_STATE_EXIT_ZOMBIE,    // Z
-//    PROCESS_STATE_EXIT_TRACE,		
-//
-//    PROCESS_STATE_TASK_PARKED,	// P
-//    PROCESS_STATE_TASK_DEAD,		// I
+    PROCESS_STATE_TASK_RUNNING,           // R
+    PROCESS_STATE_TASK_INTERRUPTIBLE,     // S
     PROCESS_STATE_MAX,
 } PROCESS_STATE_E;
 
@@ -64,6 +54,14 @@ public:
   int functionIndex;
 };
 
+class FirstInfo {
+public:
+  std::vector<int> schedSwitchTime; // [coreId]
+  std::vector<int> coreTime;        // [coreId]
+  int coreId;                       // first core in trace
+  int startTime;
+};
+
 class TraceResolve {
 public:
   static TraceResolve &getInstance() {
@@ -81,10 +79,16 @@ private: // regex
   void resolveTrace();
   void saveTraceRegexRstToFile();
 
+private:
+  FirstInfo firstInfo;
+  void firstSchedSwitchTimeAnalysis();
+
 public:
   const std::vector<TraceLineReslove> &getTraceLine() const;
+  const FirstInfo &getTraceFirstInfo() const;
   double convertTimeIntToDouble(const int &timestamp);
   void trace_resolve_proc();
+  void trace_check_show();
 };
 
 #endif

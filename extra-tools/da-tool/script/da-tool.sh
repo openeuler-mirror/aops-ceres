@@ -316,7 +316,7 @@ function opt_check() {
 }
 
 function clear_env() {
-	echo "clear env..."
+	echo "[INFO] clear env..."
 	echo 0 >/sys/kernel/debug/tracing/tracing_on
 
 	events_folder="/sys/kernel/debug/tracing/events/"
@@ -361,7 +361,7 @@ function clear_env() {
 			echo 0 >"$event_file"
 		fi
 	done
-	echo "clear env finish"
+	echo "[INFO] clear env finish"
 }
 
 function sample_init() {
@@ -528,10 +528,12 @@ function trace_analysis() {
 }
 
 ###################### main proc ####################################
+echo "[STEP 1] da-tool start"
+echo "[STEP 1-1] resolve config"
 config_file_resolve
-
+echo "[STEP 1-2] environment initialization"
 if [ $is_clear = true ]; then
-	echo "clear"
+	echo "[INFO] clear"
 	clear_env
 	exit 1
 fi
@@ -555,28 +557,29 @@ uprobe_event_enable $is_uprobe_sample
 kprobe_event_enable $is_kprobe_sample
 sched_event_enable $is_kprobe_sample
 
-# sampling
+echo "[STEP 1-3] start tracing..."
+# tracing
 trace_record_begin
 
 for ((i = 1; i <= ${sleep_time}; i++)); do
-	# trace_line_num=$(wc -l < /sys/kernel/debug/tracing/trace) # wrong
-	echo "sampling " $i/${sleep_time} #", trace line" $trace_line_num
+	echo "[INFO] tracing " $i/${sleep_time}
 	sleep 1
 done
-#trace_line_num=$(wc -l < /sys/kernel/debug/tracing/trace) # slow
-#echo "trace line" $trace_line_num
 
 trace_record_end
+echo "[STEP 1-4] environment reset..."
 
 clear_env
 gen_config_for_analysis
+
+echo "[STEP 1-5] save trace..."
 storage_data
 echo "" >/sys/kernel/debug/tracing/trace
 # only enable =  0 , clear event
 echo >/sys/kernel/debug/tracing/uprobe_events
 echo >/sys/kernel/debug/tracing/kprobe_events
-echo "sample finish"
-
+echo "[STEP 1-6] finish tracing ..."
 if [ $is_sample_with_analysis = true ]; then
 	trace_analysis
 fi
+echo "[EXIT] da-tool exit..."

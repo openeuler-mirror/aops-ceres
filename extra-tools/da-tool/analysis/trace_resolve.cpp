@@ -56,6 +56,12 @@ const std::vector<TraceLineReslove> &TraceResolve::getTraceLine() const
     return traceLineVec;
 }
 
+const FirstInfo &TraceResolve::getTraceFirstInfo() const
+{
+    return firstInfo;
+}
+
+
 void SchedSwitchLine::processStateToEnum(std::string state)
 {
     if (state == "R") {
@@ -68,9 +74,36 @@ void SchedSwitchLine::processStateToEnum(std::string state)
     }
 }
 
+int countLines(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "file open failed:" << filename << std::endl;
+        return -1;
+    }
+
+    int lineCount = 0;
+    std::string line;
+    while (std::getline(file, line)) {
+        lineCount++;
+    }
+
+    file.close();
+    return lineCount;
+}
+
 void TraceResolve::resolveTrace()
 {
     Config &cfg = Config::getInstance();
+    int readTraceLen = 0;
+    if (cfg.readTraceLen == 0) {
+        readTraceLen = countLines(cfg.filename[FILE_TYPE_TRACE]);
+        if (readTraceLen <= 0) {
+            return;
+        }
+    } else {
+        readTraceLen = cfg.readTraceLen;
+    }
+
     std::ifstream file(cfg.filename[FILE_TYPE_TRACE]);
     if (!file) {
         std::cout << "file open failed:" << cfg.filename[FILE_TYPE_TRACE] << std::endl;
@@ -83,7 +116,6 @@ void TraceResolve::resolveTrace()
         file.close();
         return;
     }
-
     int line_num = 0;
     int regex_num = 0;
     bool isFirstMatch = true;
@@ -94,13 +126,15 @@ void TraceResolve::resolveTrace()
     std::regex patternSchedSwitch(R"(\s+(.+)-(\d+)\s+\[(\d+)\]\s+(.)(.)(.)(.)\s+(\d+)\.(\d+):\s+(sched_switch):\s+prev_comm=.+prev_pid=(\d+)\s+prev_prio=(\d+)\s+prev_state=(\S+)\s+==>\s+next_comm=.+next_pid=(\d+)\s+next_prio=(\d+))");
     while (getline(file, line)) {
         line_num++;
-        if (line_num % 10000 == 0) {
-            std::cout << regex_num << "/" << line_num << " (matched/lines)" << std::endl;
-        }
         if (line_num < cfg.readTraceBegin) {
             continue;
         }
-        if (cfg.readTraceEnd != 0 && line_num > cfg.readTraceBegin + cfg.readTraceEnd) {
+        if (line_num % 10000 == 0) {
+            double rate = (line_num - cfg.readTraceBegin) * 1.0/ readTraceLen;
+            std::cout << "[Resolve] " << std::fixed << std::setprecision(3) << rate * 100 << "%, ";
+            std::cout << "Match " << regex_num << std::endl;
+        }
+        if (cfg.readTraceLen != 0 && line_num > cfg.readTraceBegin + cfg.readTraceLen) {
             break;
         }
 
@@ -143,6 +177,9 @@ void TraceResolve::resolveTrace()
         if (isMatch) {
             if (isFirstMatch) {
                 startTimeIntPart = std::stoi(match[TRACE_INFO_TIMESTAMP_INT].str());
+                firstInfo.coreId =  std::stoi(match[TRACE_INFO_CPU].str());
+                firstInfo.startTime = (std::stoi(match[TRACE_INFO_TIMESTAMP_INT].str()) - startTimeIntPart) * MICRO_PER_SEC \
+                + std::stoi(match[TRACE_INFO_TIMESTAMP_FLOAT].str());
                 isFirstMatch = false;
             }
             match_info.timestamp = (std::stoi(match[TRACE_INFO_TIMESTAMP_INT].str()) - startTimeIntPart) * MICRO_PER_SEC \
@@ -165,7 +202,7 @@ void TraceResolve::resolveTrace()
     }
 
     if (traceLineVec.size() > 0) {
-        std::cout << "trace delay :" << traceLineVec[traceLineVec.size() - 1].timestamp - traceLineVec[0].timestamp << std::endl;
+        std::cout << "[INFO] trace delay : " << traceLineVec[traceLineVec.size() - 1].timestamp - traceLineVec[0].timestamp << std::endl;
     }
 
     file.close();
@@ -206,8 +243,64 @@ double TraceResolve::convertTimeIntToDouble(const int &timestamp)
     return timestamp * 1.0 / MICRO_PER_SEC + startTimeIntPart;
 }
 
+void TraceResolve::firstSchedSwitchTimeAnalysis()
+{
+    Config &cfg = Config::getInstance();
+    bool isCfgSchedSwitch = cfg.funcCfgMap.count("sched_switch") > 0;
+    int sched_switch_funcidx = -1;
+    if (isCfgSchedSwitch) {
+        sched_switch_funcidx = cfg.funcCfgMap["sched_switch"].functionIndex;
+    } else {
+        return;
+    }
+
+    firstInfo.schedSwitchTime.resize(CPU_CORE_NUM_MAX, INT_MAX);
+    firstInfo.coreTime.resize(CPU_CORE_NUM_MAX, INT_MAX);
+    firstInfo.schedSwitchTime[firstInfo.coreId] = firstInfo.startTime;
+    firstInfo.coreTime[firstInfo.coreId] = firstInfo.startTime;
+
+    for (const auto &line_info_tmp : traceLineVec) {
+        std::string functionName = line_info_tmp.functionName;
+        int pid = line_info_tmp.pid;
+        if (cfg.funcCfgMap.count(functionName) == 0) {
+            continue;
+        }
+
+        int timestamp = line_info_tmp.timestamp;
+        int coreIndex = line_info_tmp.core;
+        int functionIndex = cfg.funcCfgMap[functionName].functionIndex;
+        // first appearance of coreIndex in trace
+        if (firstInfo.coreTime[coreIndex] == INT_MAX) {
+            firstInfo.coreTime[coreIndex] = timestamp;
+        }
+        // first appearance of sched_switch in coreIndex's trace
+        if (functionIndex == sched_switch_funcidx && firstInfo.schedSwitchTime[coreIndex] == INT_MAX) {
+            firstInfo.schedSwitchTime[coreIndex] = timestamp;
+        }
+    }
+}
+
 void TraceResolve::trace_resolve_proc()
 {
     resolveTrace();
     saveTraceRegexRstToFile();
+
+    firstSchedSwitchTimeAnalysis();
+}
+
+void TraceResolve::trace_check_show()
+{
+    Config &cfg = Config::getInstance();
+    for (int coreId = 0; coreId < CPU_CORE_NUM_MAX; coreId++) {
+        int firstSchedSwitchTime = firstInfo.schedSwitchTime[coreId];
+        int firstCoreTime = firstInfo.coreTime[coreId];
+        if (cfg.getDebugLevel() >= DEBUG_LEVEL_1) {
+            std::cout << "coreId:" << coreId;
+            std::cout << ",firstSchedSwitchTime:" << firstSchedSwitchTime;
+            std::cout << ",firstCoreTime:" << firstCoreTime << std::endl;
+        }
+        if (firstSchedSwitchTime != firstCoreTime) {
+            std::cout << "[ERROR] core " << coreId << " missing starting scheduling information, result maybe error!!!" << std::endl;
+        }
+    }
 }
