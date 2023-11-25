@@ -45,7 +45,6 @@ void Config::pathInit()
 
     // debug
     filename[FILE_TYPE_OUTPUT_RUN_LOG] = pathOutputDebug + "/run.log";
-    filename[FILE_TYPE_OUTPUT_FUNC_STACK_ALL_INFO] = pathOutput + "/func_stack_all_info";
     filename[FILE_TYPE_DEBUG_TIME_PAIE] = pathOutputDebug + "/debug_time_pair";
     filename[FILE_TYPE_DEBUG_TRACE] = pathOutputDebug + "/debug_trace";
     filename[FILE_TYPE_DEBUG_FUNC_STACK_TRACE] = pathOutputDebug + "/debug_funcstk_trace";
@@ -129,6 +128,7 @@ void Config::functionCfgInit()
         std::ofstream fileDebug(filename[FILE_TYPE_DEBUG_CONFIG], std::ios::out | std::ios::trunc);
         if (!fileDebug) {
             std::cout << "file open failed:" << filename[FILE_TYPE_DEBUG_CONFIG] << std::endl;
+            file.close();
             return;
         }
 
@@ -157,7 +157,7 @@ void Config::configInit(int argc, char *argv[])
             readTraceBegin = std::stoi(optarg);
             break;
         case 'l':
-            readTraceEnd = std::stoi(optarg);
+            readTraceLen = std::stoi(optarg);
             break;
         case 'g':
             if (std::stoi(optarg) < DEBUG_LEVEL_MAX) {

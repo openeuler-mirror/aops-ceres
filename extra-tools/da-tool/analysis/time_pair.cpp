@@ -85,6 +85,7 @@ void TimePair::saveFuncStkDebugToFile(std::ofstream &file, const int &pid, const
             continue;
         }
         file << "pid" << "," << pid << ",";
+        file << "stk_pid" << "," << stk_pid << ",";
         file << "timestamp" << "," << timestamp << ",";
         file << "functionIndex" << "," << functionIndex << ",";
         file << "isRet" << "," << isRet << ",";
@@ -150,6 +151,20 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
         infoTmp.maxStartTimeInvaild = 0;
         infoTmp.minEndTimeInvalid = INT_MAX;
         timePairMap[pid].emplace(functionIndex, infoTmp);
+    }
+
+    Config &cfg = Config::getInstance();
+    bool isCfgSchedSwitch = cfg.funcCfgMap.count("sched_switch") > 0;
+    int sched_switch_funcidx = -1;
+    if (isCfgSchedSwitch) {
+        sched_switch_funcidx = cfg.funcCfgMap["sched_switch"].functionIndex;
+        const TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
+        const FirstInfo &firstInfo = trace_resolve_inst.getTraceFirstInfo();
+        int coreIndex = line_info_tmp.core;
+        // This process cannot find the starting sched switch on this core, ignore trace after timestamp
+        if (timestamp <= firstInfo.schedSwitchTime[coreIndex] && functionIndex != sched_switch_funcidx) {
+            timePairMap[pid][functionIndex].minEndTimeInvalid = timestamp;
+        }
     }
 
     if (isRet) {
@@ -496,14 +511,18 @@ void TimePair::saveDelayInfoToFile()
     file << "call_times(r<0),ave(r<0),sum(r<0),min(r<0),max(r<0),p50(r<0),p80(r<0),p95(r<0),p99(r<0),";
     file << std::endl;
     for (const auto &processInfo : timePairMap) {
+        int pid = processInfo.first;
+        if (pid == 0) {
+            continue;
+        }
         for (const auto &funcInfo : processInfo.second) {
-            if (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(processInfo.first) == 0) {
+            if (cfg.filterCfgMap.size() != 0 && cfg.filterCfgMap.count(pid) == 0) {
                 continue;
             }
             if (funcInfo.second.summary.callTimes[DELAY_INFO_ALL] <= 0) {
                 continue;
             }
-            file << "," << processInfo.first << ",";
+            file << "," << pid << ",";
             file << cfg.IndexToFunction[funcInfo.first] << ",";
 
             for (int i = 0; i < DELAY_INFO_MAX; i++) {
