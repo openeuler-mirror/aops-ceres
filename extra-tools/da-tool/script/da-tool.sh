@@ -96,7 +96,7 @@ while getopts "t:h" opt; do
 		is_sample_with_analysis=false
 		;;
 	t)
-		if [[ $OPTARG =~ ^[0-9]+$ ]]; then
+		if [[ $OPTARG =~ ^[0-9]{1,3}$ ]]; then
 			sleep_time=$OPTARG
 		else
 			usage
@@ -121,6 +121,13 @@ while getopts "t:h" opt; do
 		;;
 	esac
 done
+
+shift $((OPTIND - 1))
+if [[ $# -ne 0 ]]; then
+	echo "Illegal parameter :$@"
+	usage
+	exit 1
+fi
 
 function config_display() {
 	echo "kernel_symbols:" >>$sample_log
@@ -154,7 +161,57 @@ function arr_repet_ele_check() {
 	for element in "${arr[@]}"; do
 		count=$(printf '%s\n' "${arr[@]}" | grep -c -w "$element")
 		if [ $count -ge 2 ]; then
-			echo " '$element' duplicate configuration, please check '$config_file'"
+			echo " '$element' duplicate configuration, please check '$config_file'!!!"
+			exit 1
+		fi
+	done
+}
+
+# function names cannot contain '.' 
+function arr_check_function_support() {
+	local symbols_tmp=("$@")
+	for symbol in "${symbols_tmp[@]}"; do
+		if [[ $symbol =~ \. ]]; then
+			echo "$symbol have '.', not support, please check '$config_file!!!'" | tee -a $sample_log
+			exit 1
+		fi
+	done
+}
+
+# kernel symbols should be found in '/proc/kallsyms'
+function arr_check_kernel_symbols_exist() {
+	local symbols_tmp=("$@")
+	for symbol in "${symbols_tmp[@]}"; do
+		if grep "\<$symbol\>" /proc/kallsyms >/dev/null; then
+			echo "$symbol exist in /proc/kallsyms" >>$sample_log
+		else
+			echo "$symbol does not exist in /proc/kallsyms, please check '$config_file'!!!" | tee -a $sample_log
+			exit 1
+		fi
+	done
+}
+
+# user symbols should be found by 'nm bin'
+function arr_check_user_symbols_exist() {
+	binary=$1
+	local symbols_tmp=("${@:2}")
+	for symbol in "${symbols_tmp[@]}"; do
+		if nm "$binary" | grep -q "\<$symbol\>"; then
+			echo "$symbol dost exist in $binary" >>$sample_log
+		else
+			echo "$symbol does not exist in  $binary, please check '$config_file'!!!" | tee -a $sample_log
+			exit 1
+		fi
+	done
+}
+
+function arr_check_sched() {
+	local sched_tmp=("$@")
+	for sched in "${sched_tmp[@]}"; do
+		if [[ $sched == "sched_switch" ]]; then
+			echo "sched_switch match" >>$sample_log
+		else
+			echo "s only support sched_switch, please check '$config_file'!!!" | tee -a $sample_log
 			exit 1
 		fi
 	done
@@ -162,7 +219,10 @@ function arr_repet_ele_check() {
 
 function config_file_check() {
 	arr_repet_ele_check ${kernel_symbols[@]} # check kernel
-	arr_repet_ele_check ${sched_symbols[@]}  # check sched
+	arr_check_kernel_symbols_exist ${kernel_symbols[@]}
+	arr_check_function_support ${kernel_symbols[@]}
+	arr_repet_ele_check ${sched_symbols[@]} # check sched
+	arr_check_sched ${sched_symbols[@]}
 
 	spl_begin=0
 	declare -a target_path_tmp
@@ -176,6 +236,8 @@ function config_file_check() {
 		done
 		spl_begin=${spl_end}
 		arr_repet_ele_check ${user_symbols_arr_tmp[@]} # check user symbol of same bin
+		arr_check_function_support ${user_symbols_arr_tmp[@]}
+		arr_check_user_symbols_exist ${target_path_tmp[-1]} ${user_symbols_arr_tmp[@]}
 	done
 	arr_repet_ele_check "${target_path_tmp[@]}" # check bin
 }
