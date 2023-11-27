@@ -9,7 +9,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 BuildRequires:  python3-setuptools
 Requires:   python3-requests  python3-jsonschema python3-libconf
-Requires:   python3-concurrent-log-handler dmidecode
+Requires:   python3-concurrent-log-handler dmidecode grubby
 Provides:   aops-ceres
 Conflicts:  aops-agent
 

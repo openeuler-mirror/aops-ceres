@@ -123,10 +123,12 @@ class Collect:
                     'kernel': string
                 }
         """
+        kernel_info = re.search(r'[\d\.]+-[\d\.]+[\d]', self.get_current_kernel_version())
+
         res = {
             'os_version': self.get_os_version(),
             'bios_version': self.__get_bios_version(),
-            'kernel': self.__get_kernel_version(),
+            'kernel': kernel_info.group() if kernel_info else "",
         }
         return res
 
@@ -147,20 +149,19 @@ class Collect:
         return ''
 
     @staticmethod
-    def __get_kernel_version() -> str:
+    def get_current_kernel_version() -> str:
         """
-            get kernel version number
+            get current kernel version info
 
         Returns:
             str
         """
-        _, stdout, _ = execute_shell_command("uname -r")
+        code, stdout, stderr = execute_shell_command("uname -r")
 
-        res = re.search(r'[\d\.]+-[\d\.]+[\d]', stdout)
-        if res:
-            return res.group()
-        LOGGER.warning('Failed to get kernel version, please check dmidecode and try it again')
-        return ''
+        if code != CommandExitCode.SUCCEED:
+            LOGGER.warning('Failed to get current kernel version, please check uname command and try again')
+            LOGGER.warning(stderr)
+        return stdout
 
     @staticmethod
     def _get_cpu_info() -> Dict[str, str]:
@@ -419,7 +420,7 @@ class Collect:
                 }]
         """
 
-        code, source_name_info, _ = execute_shell_command("rpm -qai|grep .src.rpm")
+        code, source_name_info, _ = execute_shell_command("rpm -qi kernel|grep .src.rpm")
         if code != CommandExitCode.SUCCEED:
             LOGGER.error("Failed to query installed packages.")
             return []

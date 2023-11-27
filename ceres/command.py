@@ -25,7 +25,8 @@ from ceres.function.schema import (
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
     STRING_ARRAY,
-    CONF_SYNC_SCHEMA, DIRECTORY_FILE_SCHEMA,
+    CONF_SYNC_SCHEMA,
+    DIRECTORY_FILE_SCHEMA,
 )
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
@@ -33,7 +34,7 @@ from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
 from ceres.manages.list_file_manage import ListFileManage
 from ceres.manages.sync_manage import SyncManage
-from ceres.manages.vulnerability_manage import VulnerabilityManage
+from ceres.manages.vulnerability_manage import VulnerabilityManage, check_kernel_consistency
 
 
 def register_on_manager(args: argparse.Namespace) -> NoReturn:
@@ -174,6 +175,7 @@ def cve_command_manage(args):
                     "fixed_cves": cve_scan_info.get("fixed_cves", []),
                     "os_version": Collect.get_os_version(),
                     "installed_packages": Collect.get_installed_packages(),
+                    "reboot": check_kernel_consistency(),
                 }
             )
         )
