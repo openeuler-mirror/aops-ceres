@@ -182,10 +182,10 @@ function arr_check_function_support() {
 function arr_check_kernel_symbols_exist() {
 	local symbols_tmp=("$@")
 	for symbol in "${symbols_tmp[@]}"; do
-		if grep "\<$symbol\>" /proc/kallsyms >/dev/null; then
+		if grep -e "^[0-9a-fA-F]* [a-zA-Z] $symbol$" /proc/kallsyms >/dev/null; then
 			echo "$symbol exist in /proc/kallsyms" >>$sample_log
 		else
-			echo "$symbol does not exist in /proc/kallsyms, please check '$config_file'!!!" | tee -a $sample_log
+			echo "$symbol does not exist in /proc/kallsyms or not support, please check '$config_file'!!!" | tee -a $sample_log
 			exit 1
 		fi
 	done

@@ -162,7 +162,7 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
         const FirstInfo &firstInfo = trace_resolve_inst.getTraceFirstInfo();
         int coreIndex = line_info_tmp.core;
         // This process cannot find the starting sched switch on this core, ignore trace after timestamp
-        if (timestamp <= firstInfo.schedSwitchTime[coreIndex] && functionIndex != sched_switch_funcidx) {
+        if (timestamp <= firstInfo.schedSwitchTime[coreIndex] && functionIndex != sched_switch_funcidx && coreIndex != firstInfo.coreId) {
             timePairMap[pid][functionIndex].minEndTimeInvalid = timestamp;
         }
     }
@@ -444,8 +444,10 @@ void TimePair::saveTimePairToFile()
         for (const auto &funcInfo : processInfo.second) {
             int pid = processInfo.first;
             file << "pid:" << pid << "," << std::endl;
-            file << "functionIndex:" << funcInfo.first << "," << cfg.IndexToFunction[funcInfo.first] << std::endl;
-            file << "info num," << funcInfo.second.startTime.size() << ",valid info num," << funcInfo.second.callTimes << ",";
+            file << "functionIndex:" << funcInfo.first << "," << cfg.IndexToFunction[funcInfo.first] << ",";
+            file << "maxStartTimeInvaild:" << funcInfo.second.maxStartTimeInvaild << ",";
+            file << "minEndTimeInvalid:" << funcInfo.second.minEndTimeInvalid << "," << std::endl;
+            file << "info num," << funcInfo.second.startTime.size() << ",valid info num," << funcInfo.second.summary.callTimes[DELAY_INFO_ALL] << ",";
             file << "validStartTime," << validTimeOfPid[pid].validStartTime << ",validEndTime," << validTimeOfPid[pid].validEndTime << std::endl;
             file << "startTime" << ",";
             for (const auto &startTime : funcInfo.second.startTime) {
