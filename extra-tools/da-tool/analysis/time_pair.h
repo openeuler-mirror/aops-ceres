@@ -76,13 +76,6 @@ public:
 
   // analysis result
   TimePairSummary summary;
-  double aveDelay;
-  int maxDelay;
-  int minDelay;
-  int delaySum;
-  int maxDelayPos;
-  int minDelayPos;
-  int callTimes;
 };
 
 class TimePair {

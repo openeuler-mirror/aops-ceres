@@ -131,8 +131,9 @@ void TraceResolve::resolveTrace()
         }
         if (line_num % 10000 == 0) {
             double rate = (line_num - cfg.readTraceBegin) * 1.0/ readTraceLen;
-            std::cout << "[Resolve] " << std::fixed << std::setprecision(3) << rate * 100 << "%, ";
-            std::cout << "Match " << regex_num << std::endl;
+            std::cout << "\r" << "[Resolve] " << std::fixed << std::setprecision(3) << rate * 100 << "%, ";
+            std::cout << "Match " << regex_num;
+            std::cout.flush();
         }
         if (cfg.readTraceLen != 0 && line_num > cfg.readTraceBegin + cfg.readTraceLen) {
             break;
@@ -202,6 +203,7 @@ void TraceResolve::resolveTrace()
     }
 
     if (traceLineVec.size() > 0) {
+        std::cout << std::endl;
         std::cout << "[INFO] trace delay : " << traceLineVec[traceLineVec.size() - 1].timestamp - traceLineVec[0].timestamp << std::endl;
     }
 
