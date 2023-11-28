@@ -29,6 +29,6 @@
 |主题|内容简介|是否发布|
 |:----|:-----|:----|
 |[openEuler指南](https://gitee.com/openeuler/community/blob/master/zh/contributors/README.md)| 如何参与openEuler社区 | 已发布 |
-|[da-tool 使用指南](https://gitee.com/openeuler/docs/blob/stable2-20.03_LTS_SP3/docs/zh/docs/A-Ops/da-tool%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C.md)|1. 安装、配置和运行应用程序<br>2. 分析结果说明<br>3. 使用注意事项|已发布|
+|[时延分析工具 da-tool 使用手册](https://gitee.com/openeuler/docs/blob/stable2-20.03_LTS_SP4/docs/zh/docs/A-Ops/%E6%97%B6%E5%BB%B6%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7%20da-tool%20%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C.md)|1. 安装、配置和运行应用程序<br>2. 分析结果说明<br>3. 使用注意事项|已发布|
 |da-tool设计文档|1. 技术原理<br> 2. 开发指南 |暂未发布|
 
