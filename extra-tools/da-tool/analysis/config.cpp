@@ -47,6 +47,7 @@ void Config::pathInit()
     filename[FILE_TYPE_OUTPUT_RUN_LOG] = pathOutputDebug + "/run.log";
     filename[FILE_TYPE_DEBUG_TIME_PAIE] = pathOutputDebug + "/debug_time_pair";
     filename[FILE_TYPE_DEBUG_TRACE] = pathOutputDebug + "/debug_trace";
+    filename[FILE_TYPE_DEBUG_TRACE_FUNCPAIRMAP] = pathOutputDebug + "/debug_trace_funcpair";
     filename[FILE_TYPE_DEBUG_FUNC_STACK_TRACE] = pathOutputDebug + "/debug_funcstk_trace";
     filename[FILE_TYPE_DEBUG_REGEX] = pathOutputDebug + "/debug_resolve_function_trace";
     filename[FILE_TYPE_DEBUG_CONFIG] = pathOutputDebug + "/debug_config_resolve";

@@ -27,8 +27,7 @@ typedef enum {
   FS_DELAY_TYPE_MAX,
 } FS_DELAY_TYPE;
 
-class FsDelayInfo // function stack delay info
-{
+class FsDelayInfo { // function stack delay info
 public:
   std::vector<int> delay[FS_DELAY_TYPE_MAX];
   std::vector<uintptr_t> retVal;

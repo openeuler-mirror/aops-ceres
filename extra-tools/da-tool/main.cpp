@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
     FunctionStack &fstk = FunctionStack::getInstance();
     fstk.function_stack_proc();
 
-    trace_resolve_inst.trace_check_show();
     cout << "[STEP 2-2] analysis finish" << endl;
     return 0;
 }

@@ -23,8 +23,16 @@
 
 class VaildRange {
 public:
-  int validStartTime;
-  int validEndTime;
+  // Invalid timestamps divide the trace into several valid parts
+  std::vector<int> validStartTime;
+  std::vector<int> validEndTime;
+
+  int procStartTime{0};
+  int procEndTime{0};
+  int procTime{0};
+  int validTime{0};
+  // tmp var
+  bool lastTimeValid{false};
 };
 
 typedef enum {
@@ -67,7 +75,7 @@ public:
   std::vector<int> fatherFuncPos;
   std::vector<int> childFuncTimes; // Number of calls to other functions.
   std::vector<uintptr_t> retVal;   // return value
-  std::vector<bool> isInvalid;      // isInvalid=true indicates that there is no
+  std::vector<bool> isInvalid;     // isInvalid=true indicates that there is no
                                    // complete call stack data
   std::vector<std::string> strFunctionStk;
 
@@ -90,7 +98,6 @@ public:
   ~TimePair() {}
 
 private:
-  // [pid].start/end Record the start and end times of valid traces
   std::unordered_map<int, VaildRange> validTimeOfPid;
   // Store function call stacks for each pid
   std::unordered_map<int, std::vector<int>> funcStkMap;
@@ -109,6 +116,8 @@ private:
                               const int &timestamp, const int &fatherFunction,
                               const int &debugPos);
   void functionDelayUpdate();
+  void functionDelayUpdateValidTimeLoop(const int &pid, const int &timestamp,
+                                        const bool &valid);
   void functionStatisticsAnalysis();
 
   void timePairMatching();
@@ -122,6 +131,7 @@ public:
   const std::unordered_map<int, std::unordered_map<int, TimePairInfo>> &
   getTimePairMap() const;
   int getProcessValidTime(const int &pid);
+  int getProcessTime(const int &pid);
   void timePairAnalysis();
 };
 

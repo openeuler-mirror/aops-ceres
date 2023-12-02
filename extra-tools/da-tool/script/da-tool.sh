@@ -31,8 +31,9 @@ cd $base_dir
 mkdir -p tmp
 
 # extern para
-sleep_time=10
-sleep_time_max=100
+sleep_time_default=1
+sleep_time=$sleep_time_default
+sleep_time_max=10
 
 # base para
 declare -a kernel_symbols
@@ -79,8 +80,16 @@ function usage() {
 	echo "usage: da-tool.sh [OPTIONS] [ARGS]"
 	echo ""
 	echo "The most commonly used da-tool.sh options are:"
-	echo "  -t <duration>      set tracing duration, unit: seconds, 1<=duration<=100, default is 10"
+	echo "  -t <duration>      set tracing duration, unit: seconds, 1<=duration<=$sleep_time_max, default is $sleep_time_default"
 	echo "  -h                 show usage"
+}
+
+function sleep_time_check() {
+	if [ $sleep_time -ge $((sleep_time_max + 1)) ] || [ $sleep_time -le 0 ]; then
+		echo "sampling time should > 0 and <= $sleep_time_max"
+		usage
+		exit 1
+	fi
 }
 
 # get opt
@@ -99,9 +108,9 @@ while getopts "t:h" opt; do
 		if [[ $OPTARG =~ ^[0-9]{1,3}$ ]]; then
 			sleep_time=$OPTARG
 		else
-			usage
-			exit 1
+			sleep_time=0
 		fi
+		sleep_time_check
 		;;
 	p)
 		parameter="$OPTARG"
@@ -161,7 +170,7 @@ function arr_repet_ele_check() {
 	for element in "${arr[@]}"; do
 		count=$(printf '%s\n' "${arr[@]}" | grep -c -w "$element")
 		if [ $count -ge 2 ]; then
-			echo " '$element' duplicate configuration, please check '$config_file'!!!"
+			echo " '$element' duplicate configuration"
 			exit 1
 		fi
 	done
@@ -172,7 +181,7 @@ function arr_check_function_support() {
 	local symbols_tmp=("$@")
 	for symbol in "${symbols_tmp[@]}"; do
 		if [[ $symbol =~ \. ]]; then
-			echo "$symbol have '.', not support, please check '$config_file!!!'" | tee -a $sample_log
+			echo "$symbol have '.', not support" | tee -a $sample_log
 			exit 1
 		fi
 	done
@@ -181,12 +190,18 @@ function arr_check_function_support() {
 # kernel symbols should be found in '/proc/kallsyms'
 function arr_check_kernel_symbols_exist() {
 	local symbols_tmp=("$@")
+	kernel_symbols=()
 	for symbol in "${symbols_tmp[@]}"; do
 		if grep -e "^[0-9a-fA-F]* [a-zA-Z] $symbol$" /proc/kallsyms >/dev/null; then
 			echo "$symbol exist in /proc/kallsyms" >>$sample_log
+			# first version
+			# (1) only support kernel symbols
+			# (2) can't config /etc/da-tool.conf
+			# (3) if symbols not in /proc/kallsyms, then continue(not exit)
+			kernel_symbols[${#kernel_symbols[*]}]+=$symbol
 		else
-			echo "$symbol does not exist in /proc/kallsyms or not support, please check '$config_file'!!!" | tee -a $sample_log
-			exit 1
+			echo "$symbol does not exist in /proc/kallsyms or not support" | tee -a $sample_log
+			# exit 1 # after first version
 		fi
 	done
 }
@@ -199,7 +214,7 @@ function arr_check_user_symbols_exist() {
 		if nm "$binary" | grep -q "\<$symbol\>"; then
 			echo "$symbol dost exist in $binary" >>$sample_log
 		else
-			echo "$symbol does not exist in  $binary, please check '$config_file'!!!" | tee -a $sample_log
+			echo "$symbol does not exist in  $binary" | tee -a $sample_log
 			exit 1
 		fi
 	done
@@ -211,7 +226,7 @@ function arr_check_sched() {
 		if [[ $sched == "sched_switch" ]]; then
 			echo "sched_switch match" >>$sample_log
 		else
-			echo "s only support sched_switch, please check '$config_file'!!!" | tee -a $sample_log
+			echo "s only support sched_switch" | tee -a $sample_log
 			exit 1
 		fi
 	done
@@ -301,20 +316,6 @@ function gen_config_for_analysis() {
 	done
 }
 
-function opt_check() {
-	if [ $is_uprobe_sample = false ] && [ $is_kprobe_sample = false ]; then
-		echo "use -m u|k|uk to set uprobe/kprobe/both"
-		usage
-		exit 1
-	fi
-
-	if [ $sleep_time -ge $((sleep_time_max + 1)) ] || [ $sleep_time -le 0 ]; then
-		echo "sampling time should > 0 and <= $sleep_time_max"
-		usage
-		exit 1
-	fi
-}
-
 function clear_env() {
 	echo "[INFO] clear env..."
 	echo 0 >/sys/kernel/debug/tracing/tracing_on
@@ -368,6 +369,7 @@ function sample_init() {
 	echo 0 >/sys/kernel/debug/tracing/tracing_on
 	echo >/sys/kernel/debug/tracing/trace
 	echo 40960 >/sys/kernel/debug/tracing/buffer_size_kb
+
 
 	echo >/sys/kernel/debug/tracing/uprobe_events
 	echo >/sys/kernel/debug/tracing/kprobe_events
@@ -537,8 +539,6 @@ if [ $is_clear = true ]; then
 	clear_env
 	exit 1
 fi
-
-opt_check
 
 if [ $is_analysis_only_mode = true ]; then # only analysis
 	trace_analysis
