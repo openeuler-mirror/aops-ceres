@@ -12,13 +12,13 @@
 # ******************************************************************************/
 import argparse
 
-from ceres.function.command import (
+from ceres.command import (
     collect_command_manage,
     cve_command_manage,
     plugin_command_manage,
     register_on_manager,
     sync_conf_manage,
-    list_file_manage
+    list_file_manage,
 )
 from ceres.function.log import LOGGER
 
