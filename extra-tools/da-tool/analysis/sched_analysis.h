@@ -20,11 +20,29 @@
 #include <unordered_map>
 #include <vector>
 
+typedef enum {
+  CORE_TRACE_INVALID,    // valid when (s sr) or (sr s and startcore = endcore)
+  CORE_TRACE_SCHEDULING, // (s sr)
+  CORE_TRACE_ONCORE,     // (sr s and startcore = endcore)
+  CORE_TRACE_MAX,
+} CORE_TRACE_E;
+
+typedef enum {
+  SCHED_SUMMARY_VAILD,
+  SCHED_SUMMARY_ALL, // "all" means "valid" + "invalid"
+  SCHED_SUMMARY_MAX,
+} SCHED_SUMMARY_E;
+
 class ProcessCoreTrace {
 public:
   int startTime;
   int endTime;
-  int coreIndex; // -1 means sched_switch
+  int startCoreId;
+  int endCoreId;
+  bool startIsRet; // pid1->pid2  ret for pid2, not ret for pid1
+  bool endIsRet;
+
+  CORE_TRACE_E coreTraceType;
 };
 
 class ProcessSchedInfo {
@@ -33,11 +51,12 @@ public:
       std::vector<int>(CPU_CORE_NUM_MAX, 0)}; // Time running on each CPU
   std::vector<ProcessCoreTrace>
       coreTrace; // CPU information of pid in each time period
-  int schedSwitchDelay;
-  int schedSwitchTimes;
-  double percentageSchedSwitch;
-  int cpuSwitchTimes;
-  int delaySum;
+
+  int vaildSchedSwitchDelay;
+  double validPercentSchedSwitch; // valid / valid
+  int schedSwitchTimes[SCHED_SUMMARY_MAX];
+  int cpuSwitchTimes[SCHED_SUMMARY_MAX];
+  int delaySum[SCHED_SUMMARY_MAX];
 };
 
 class CpuSchedTrace {
@@ -70,8 +89,9 @@ private: // process sched info
   std::unordered_map<int, ProcessSchedInfo> processSchedMap; // [pid]
   // std::vector <std::vector<CpuSchedInfo>> allCpuSchedInfo;  // [coreIndex]
   void processSchedAnalysisLoop(const int &pid, const int &timestamp,
-                                const int &coreIndex);
+                                const int &coreIndex, const bool &isRet);
   void schedInfoProc();
+  void schedInfoVaildMark();
   void schedInfoAnalysis();
   void saveSchedInfoToFile();
   void saveSchedInfoSummaryToFile();

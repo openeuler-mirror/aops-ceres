@@ -24,9 +24,9 @@ SchedAnalysis::SchedAnalysis()
 
 }
 
-void SchedAnalysis::processSchedAnalysisLoop(const int &pid, const int &timestamp, const int &coreIndex)
+void SchedAnalysis::processSchedAnalysisLoop(const int &pid, const int &timestamp, const int &coreIndex, const bool &isRet)
 {
-    if (processSchedMap.count(pid) != 0) {
+    if (processSchedMap.count(pid) == 0) {
         ProcessSchedInfo tmp;
         processSchedMap.emplace(pid, tmp);
     }
@@ -34,9 +34,16 @@ void SchedAnalysis::processSchedAnalysisLoop(const int &pid, const int &timestam
     ProcessCoreTrace pct;
     pct.startTime = timestamp;
     pct.endTime = timestamp;
-    pct.coreIndex = coreIndex;
-    if (size != 0) {
+    pct.startCoreId = coreIndex;
+    pct.endCoreId = coreIndex;
+    pct.startIsRet = isRet;
+    pct.endIsRet = isRet;
+    pct.coreTraceType = CORE_TRACE_INVALID;
+
+    if (size > 0) {
         processSchedMap[pid].coreTrace[size - 1].endTime = timestamp;
+        processSchedMap[pid].coreTrace[size - 1].endCoreId = coreIndex;
+        processSchedMap[pid].coreTrace[size - 1].endIsRet = isRet;
     }
     processSchedMap[pid].coreTrace.emplace_back(pct);
 }
@@ -65,45 +72,75 @@ void SchedAnalysis::schedInfoProc()
 
         if (functionIndex == sched_switch_funcidx) {
             int nextPid = line_info_tmp.schedSwitchLine.nextPid;
-            processSchedAnalysisLoop(pid, timestamp, -1); // pid1 - > pidn
-            processSchedAnalysisLoop(nextPid, timestamp, coreIndex); // pidm - > pid1
+            processSchedAnalysisLoop(pid, timestamp, coreIndex, false); // pid1 - > pidn
+            processSchedAnalysisLoop(nextPid, timestamp, coreIndex, true); // pidm - > pid1
+        }
+    }
+    // last coreTrace always invalid
+    for (auto &sched_tmp : processSchedMap) {
+        if (!sched_tmp.second.coreTrace.empty()) {
+            sched_tmp.second.coreTrace.pop_back();
         }
     }
 }
 
+void SchedAnalysis::schedInfoVaildMark()
+{
+    for (auto &sched_tmp : processSchedMap) {
+        for (auto &coreTrace : sched_tmp.second.coreTrace) {
+            if (!coreTrace.startIsRet && coreTrace.endIsRet) {
+                coreTrace.coreTraceType = CORE_TRACE_SCHEDULING;
+            }
+
+            if (coreTrace.startIsRet && !coreTrace.endIsRet && (coreTrace.startCoreId == coreTrace.endCoreId)) {
+                coreTrace.coreTraceType = CORE_TRACE_ONCORE;
+            }
+        }
+    }
+}
+
+
 void SchedAnalysis::schedInfoAnalysis()
 {
     for (auto &sched_tmp : processSchedMap) {
-        int lastCoreIndex = -1;
-        int delaySum = 0;
-        int delaySched = 0;
-        int schedSwitchTimes = 0;
-        int cpuSwitchTimes = 0;
-        for (auto &coreTrace : sched_tmp.second.coreTrace) {
+        int delaySum[SCHED_SUMMARY_MAX] = { 0 };
+        int schedSwitchTimes[SCHED_SUMMARY_MAX] = { 0 };
+        int cpuSwitchTimes[SCHED_SUMMARY_MAX] = { 0 };
+        int vaildDelaySched = 0; // Invalid scheduling cannot be analyzed
+        for (const auto &coreTrace : sched_tmp.second.coreTrace) {
             int delay = coreTrace.endTime - coreTrace.startTime;
-            int coreIndex = coreTrace.coreIndex;
-            delaySum += delay;
-            if (coreIndex == -1) {
-                delaySched += delay;
-                schedSwitchTimes++;
-            } else {
+            delaySum[SCHED_SUMMARY_ALL] += delay;
+            if (!coreTrace.startIsRet) { // count pid1->pidn times
+                schedSwitchTimes[SCHED_SUMMARY_ALL]++;
+            }
+            if (coreTrace.startCoreId != coreTrace.endCoreId) {
+                cpuSwitchTimes[SCHED_SUMMARY_ALL]++;
+            }
+            if (coreTrace.coreTraceType != CORE_TRACE_INVALID) {
+                delaySum[SCHED_SUMMARY_VAILD] += delay;
+            }
+            if (coreTrace.coreTraceType == CORE_TRACE_ONCORE) {
+                int coreIndex = coreTrace.startCoreId;
                 sched_tmp.second.runTimeOfCore[coreIndex] += delay;
             }
 
-            if (lastCoreIndex == -1 && coreIndex != -1) {
-                lastCoreIndex = coreIndex;
-            }
-
-            if (lastCoreIndex != coreIndex && coreIndex != -1) {
-                cpuSwitchTimes++;
-                lastCoreIndex = coreTrace.coreIndex;
+            if (coreTrace.coreTraceType == CORE_TRACE_SCHEDULING) {
+                vaildDelaySched += delay;
+                schedSwitchTimes[SCHED_SUMMARY_VAILD]++;
+                if (coreTrace.startCoreId != coreTrace.endCoreId) {
+                    // CPU switching only occurs during scheduling
+                    cpuSwitchTimes[SCHED_SUMMARY_VAILD]++;
+                }
             }
         }
-        sched_tmp.second.schedSwitchDelay = delaySched;
-        sched_tmp.second.schedSwitchTimes = schedSwitchTimes;
-        sched_tmp.second.percentageSchedSwitch = delaySum == 0? 0.0 : delaySched * 1.0 / delaySum;
-        sched_tmp.second.cpuSwitchTimes = cpuSwitchTimes;
-        sched_tmp.second.delaySum = delaySum;
+        sched_tmp.second.vaildSchedSwitchDelay = vaildDelaySched;
+        sched_tmp.second.validPercentSchedSwitch = delaySum[SCHED_SUMMARY_VAILD] == 0 ? 0.0 : vaildDelaySched * 1.0 / delaySum[SCHED_SUMMARY_VAILD];
+        sched_tmp.second.schedSwitchTimes[SCHED_SUMMARY_VAILD] = schedSwitchTimes[SCHED_SUMMARY_VAILD];
+        sched_tmp.second.schedSwitchTimes[SCHED_SUMMARY_ALL] = schedSwitchTimes[SCHED_SUMMARY_ALL];
+        sched_tmp.second.cpuSwitchTimes[SCHED_SUMMARY_VAILD] = cpuSwitchTimes[SCHED_SUMMARY_VAILD];
+        sched_tmp.second.cpuSwitchTimes[SCHED_SUMMARY_ALL] = cpuSwitchTimes[SCHED_SUMMARY_ALL];
+        sched_tmp.second.delaySum[SCHED_SUMMARY_VAILD] = delaySum[SCHED_SUMMARY_VAILD];
+        sched_tmp.second.delaySum[SCHED_SUMMARY_ALL] = delaySum[SCHED_SUMMARY_ALL];
     }
 }
 
@@ -121,12 +158,15 @@ void SchedAnalysis::saveSchedInfoToFile()
         if (pid == 0) {
             continue;
         }
-        file << "pid," << pid << ",";
-        file << "delaySum," << sched_tmp.second.delaySum << ",";
-        file << "schedSwitchDelay," << sched_tmp.second.schedSwitchDelay << ",";
-        file << "runtime," << sched_tmp.second.delaySum - sched_tmp.second.schedSwitchDelay << ",";
-        file << "cpuSwitchTimes," << sched_tmp.second.cpuSwitchTimes << ",";
-        file << std::endl;
+        file << "pid," << pid << "," << std::endl;
+        file << "cpuSwitchTimes," << sched_tmp.second.cpuSwitchTimes[SCHED_SUMMARY_ALL] << ",";
+        file << "schedSwitchTimes," << sched_tmp.second.schedSwitchTimes[SCHED_SUMMARY_ALL] << ",";
+        file << "delaySum," << sched_tmp.second.delaySum[SCHED_SUMMARY_ALL] << "," << std::endl;
+        file << "vaildCpuSwitchTimes," << sched_tmp.second.cpuSwitchTimes[SCHED_SUMMARY_VAILD] << ",";
+        file << "vaildSchedSwitchTimes," << sched_tmp.second.schedSwitchTimes[SCHED_SUMMARY_VAILD] << ",";
+        file << "validDelaySum," << sched_tmp.second.delaySum[SCHED_SUMMARY_VAILD] << ",";
+        file << "vaildSchedSwitchDelay," << sched_tmp.second.vaildSchedSwitchDelay << ",";
+        file << "validRuntime," << sched_tmp.second.delaySum[SCHED_SUMMARY_VAILD] - sched_tmp.second.vaildSchedSwitchDelay << "," << std::endl;
         for (int coreIndex = 0; coreIndex < sched_tmp.second.runTimeOfCore.size(); coreIndex++) {
             int run_time = sched_tmp.second.runTimeOfCore[coreIndex];
             if (run_time != 0) {
@@ -137,7 +177,16 @@ void SchedAnalysis::saveSchedInfoToFile()
         for (const auto &coreTrace : sched_tmp.second.coreTrace) {
             file << "startTime," << std::fixed << std::setprecision(6) << slv.convertTimeIntToDouble(coreTrace.startTime) << ",";
             file << "endTime," << std::fixed << std::setprecision(6) << slv.convertTimeIntToDouble(coreTrace.endTime) << ",";
-            file << "coreIndex," << coreTrace.coreIndex;
+            file << "startCoreId," << coreTrace.startCoreId << ",";
+            file << "endCoreId," << coreTrace.endCoreId << ",";
+            file << "coreTraceType,";
+            if (coreTrace.coreTraceType == CORE_TRACE_INVALID) {
+                file << "invalid";
+            } else if (coreTrace.coreTraceType == CORE_TRACE_SCHEDULING) {
+                file << "scheduling";
+            } else if (coreTrace.coreTraceType == CORE_TRACE_ONCORE) {
+                file << "running";
+            }
             file << std::endl;
         }
         file << std::endl;
@@ -154,8 +203,7 @@ void SchedAnalysis::saveSchedInfoSummaryToFile()
         std::cout << "file open failed:" << cfg.filename[FILE_TYPE_OUTPUT_SUMMARY_SCHED_INFO] << std::endl;
         return;
     }
-    file << "pid,delaySum,schedSwitchDelay,schedSwitchPercentage,schedSwitchTimes,cpuSwitchTimes";
-    file << std::endl;
+    file << "pid,validDelaySum,vaildSchedSwitchDelay,validSchedSwitchPercentage,validSchedSwitchTimes,validCpuSwitchTimes" << std::endl;
     TraceResolve &slv = TraceResolve::getInstance();
     for (const auto &sched_tmp : processSchedMap) {
         int pid = sched_tmp.first;
@@ -163,12 +211,11 @@ void SchedAnalysis::saveSchedInfoSummaryToFile()
             continue;
         }
         file << pid << ",";
-        file << sched_tmp.second.delaySum << ",";
-        file << sched_tmp.second.schedSwitchDelay << ",";
-        file << std::fixed << std::setprecision(3) << sched_tmp.second.percentageSchedSwitch * 100 << "%,";
-        file << sched_tmp.second.schedSwitchTimes << ",";
-        file << sched_tmp.second.cpuSwitchTimes << ",";
-        file << std::endl;
+        file << sched_tmp.second.delaySum[SCHED_SUMMARY_VAILD] << ",";
+        file << sched_tmp.second.vaildSchedSwitchDelay << ",";
+        file << std::fixed << std::setprecision(3) << sched_tmp.second.validPercentSchedSwitch * 100 << "%,";
+        file << sched_tmp.second.schedSwitchTimes[SCHED_SUMMARY_VAILD] << ",";
+        file << sched_tmp.second.cpuSwitchTimes[SCHED_SUMMARY_VAILD] << "," << std::endl;
     }
 
     file.close();
@@ -177,6 +224,8 @@ void SchedAnalysis::saveSchedInfoSummaryToFile()
 void SchedAnalysis::schedAnalysisProc()
 {
     schedInfoProc();
+    schedInfoVaildMark();
+
     schedInfoAnalysis();
     saveSchedInfoToFile();
     saveSchedInfoSummaryToFile();

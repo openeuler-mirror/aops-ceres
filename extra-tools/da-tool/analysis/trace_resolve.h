@@ -21,11 +21,10 @@
 #include <vector>
 
 // include\linux\sched.h
-typedef enum
-{
-    PROCESS_STATE_TASK_RUNNING,           // R
-    PROCESS_STATE_TASK_INTERRUPTIBLE,     // S
-    PROCESS_STATE_MAX,
+typedef enum {
+  PROCESS_STATE_TASK_RUNNING,       // R
+  PROCESS_STATE_TASK_INTERRUPTIBLE, // S
+  PROCESS_STATE_MAX,
 } PROCESS_STATE_E;
 
 class SchedSwitchLine {
@@ -40,6 +39,13 @@ public:
   void processStateToEnum(std::string state);
 };
 
+typedef enum {
+  TRACE_VALID_FUNC,
+  TRACE_VALID_SCHED_SWITCH_PREV,
+  TRACE_VALID_SCHED_SWITCH_NEXT,
+  TRACE_VALID_MAX,
+} TRACE_VALID_E;
+
 class TraceLineReslove {
 public:
   int traceLineNum;
@@ -52,14 +58,24 @@ public:
 
   // after convert
   int functionIndex;
+  bool traceValid[TRACE_VALID_MAX];
 };
 
-class FirstInfo {
+class FuncValid {
 public:
-  std::vector<int> schedSwitchTime; // [coreId]
-  std::vector<int> coreTime;        // [coreId]
-  int coreId;                       // first core in trace
-  int startTime;
+  std::vector<int> traceLineIndex;
+  std::vector<bool> isRet;
+  std::vector<bool> valid; // rst
+
+  void addToVectors(int traceId, bool isR, bool val);
+};
+
+class FuncStkValid {
+public:
+  std::vector<int> funcStk;
+  std::vector<int> traceIndex;
+  std::vector<TRACE_VALID_E> vaildType; // size() = traceIndex.size();
+  bool isInvalid{false};                // tmp rst
 };
 
 class TraceResolve {
@@ -80,12 +96,20 @@ private: // regex
   void saveTraceRegexRstToFile();
 
 private:
-  FirstInfo firstInfo;
-  void firstSchedSwitchTimeAnalysis();
+  // [pid][functionIndex] mark unmatch func => invalid
+  std::unordered_map<int, std::unordered_map<int, FuncValid>> funcPairMap;
+  // [pid]  if funcstk have invalid data, mark all funcstk invalid
+  std::unordered_map<int, FuncStkValid> funcStkValidMap;
+  void creatEmptyFuncPairMap(const int &pid, const int &funcIndex);
+  void funcPairMapInit();
+  void markTraceIsValid();
+  void markFuncStkValid();
+  void markFuncStkValidLoop(const int &pid, const int &funcIndex,
+                            const int &traceId, const TRACE_VALID_E &validType);
+  void saveFuncPairMapToFile();
 
 public:
   const std::vector<TraceLineReslove> &getTraceLine() const;
-  const FirstInfo &getTraceFirstInfo() const;
   double convertTimeIntToDouble(const int &timestamp);
   void trace_resolve_proc();
   void trace_check_show();

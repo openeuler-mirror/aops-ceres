@@ -153,20 +153,6 @@ void TimePair::timePairUpdateLoop(const int &pid, const int &functionIndex, cons
         timePairMap[pid].emplace(functionIndex, infoTmp);
     }
 
-    Config &cfg = Config::getInstance();
-    bool isCfgSchedSwitch = cfg.funcCfgMap.count("sched_switch") > 0;
-    int sched_switch_funcidx = -1;
-    if (isCfgSchedSwitch) {
-        sched_switch_funcidx = cfg.funcCfgMap["sched_switch"].functionIndex;
-        const TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
-        const FirstInfo &firstInfo = trace_resolve_inst.getTraceFirstInfo();
-        int coreIndex = line_info_tmp.core;
-        // This process cannot find the starting sched switch on this core, ignore trace after timestamp
-        if (timestamp <= firstInfo.schedSwitchTime[coreIndex] && functionIndex != sched_switch_funcidx && coreIndex != firstInfo.coreId) {
-            timePairMap[pid][functionIndex].minEndTimeInvalid = timestamp;
-        }
-    }
-
     if (isRet) {
         if (timePairMap[pid][functionIndex].startTime.size() == 0) { //  fist is endtime ,startime=endtime
             timePairMap[pid][functionIndex].startTime.emplace_back(timestamp);
@@ -219,7 +205,6 @@ void TimePair::timePairAlignment()
     for (auto &processInfo : timePairMap) {
         for (auto &funcInfo : processInfo.second) {
             int diffLen = funcInfo.second.startTime.size() - funcInfo.second.endTime.size();
-            bool updateEndTimeInvalid = false;
             if (diffLen == 0) {
                 if (isOutputDebugFile) {
                     file << diffLen << "," << processInfo.first << " ," << funcInfo.first << " ," << \
@@ -247,9 +232,8 @@ void TimePair::timePairAlignment()
                 for (int i = 0; i < diffLen; i++) {
                     int endTime = funcInfo.second.startTime[funcInfo.second.startTime.size() - diffLen + i];
                     funcInfo.second.endTime.emplace_back(endTime);
-                    if (updateEndTimeInvalid == false) {
+                    if (funcInfo.second.minEndTimeInvalid > endTime) {
                         funcInfo.second.minEndTimeInvalid = endTime;
-                        updateEndTimeInvalid = true;
                     }
                 }
             }
@@ -303,8 +287,9 @@ void TimePair::timePairMarkInvalidData()
                 }
             }
         }
-        validTimeOfPid[pid].validStartTime = validStartTime;
-        validTimeOfPid[pid].validEndTime = validEndTime;
+        validTimeOfPid[pid].procStartTime = validStartTime;
+        validTimeOfPid[pid].procEndTime = validEndTime;
+        validTimeOfPid[pid].procTime = validEndTime - validStartTime;
     }
 
     Config &cfg = Config::getInstance();
@@ -315,8 +300,8 @@ void TimePair::timePairMarkInvalidData()
             return;
         }
         for (const auto &range_info : validTimeOfPid) {
-            file << "pid," << range_info.first << ",validStartTime ," << range_info.second.validStartTime << \
-                ", validEndTime ," << range_info.second.validEndTime << std::endl;
+            file << "pid," << range_info.first << ",procStartTime ," << range_info.second.procStartTime << \
+                ", procEndTime ," << range_info.second.procEndTime << std::endl;
         }
         file.close();
     }
@@ -347,20 +332,39 @@ void TimePair::timePairMatching()
         int functionIndex = cfg.funcCfgMap[functionName].functionIndex;
         int isRet = cfg.funcCfgMap[functionName].isRet;
         int debugPos = 0;
-        int fatherFunction = getFatherFunctionIdLoop(pid, functionIndex, isRet, debugPos);
-        saveFuncStkDebugToFile(file, pid, functionIndex, isRet, timestamp, fatherFunction, debugPos);
-        timePairUpdateLoop(pid, functionIndex, isRet, timestamp, fatherFunction, line_info_tmp);
+        if (line_info_tmp.traceValid[TRACE_VALID_FUNC] || line_info_tmp.traceValid[TRACE_VALID_SCHED_SWITCH_PREV]) {
+            int fatherFunction = getFatherFunctionIdLoop(pid, functionIndex, isRet, debugPos);
+            saveFuncStkDebugToFile(file, pid, functionIndex, isRet, timestamp, fatherFunction, debugPos);
+            timePairUpdateLoop(pid, functionIndex, isRet, timestamp, fatherFunction, line_info_tmp);
+        }
 
-        if (isCfgSchedSwitch && functionIndex == sched_switch_funcidx) // pid1->pid2 : pid1->sched() sched_ret()->pid2
+        if (isCfgSchedSwitch && functionIndex == sched_switch_funcidx && line_info_tmp.traceValid[TRACE_VALID_SCHED_SWITCH_NEXT]) // pid1->pid2 : pid1->sched() sched_ret()->pid2
         {
             int nextPid = line_info_tmp.schedSwitchLine.nextPid;
             isRet = 1;
-            fatherFunction = getFatherFunctionIdLoop(nextPid, functionIndex, isRet, debugPos);
+            int fatherFunction = getFatherFunctionIdLoop(nextPid, functionIndex, isRet, debugPos);
             saveFuncStkDebugToFile(file, nextPid, functionIndex, isRet, timestamp, fatherFunction, debugPos);
             timePairUpdateLoop(nextPid, functionIndex, isRet, timestamp, fatherFunction, line_info_tmp);
         }
     }
     file.close();
+}
+
+void TimePair::functionDelayUpdateValidTimeLoop(const int &pid, const int &timestamp, const bool &valid)
+{
+
+    int lastTimeValid = validTimeOfPid[pid].lastTimeValid;
+    if (!lastTimeValid && valid) {
+        validTimeOfPid[pid].validStartTime.emplace_back(timestamp);
+        validTimeOfPid[pid].validEndTime.emplace_back(timestamp);
+    }
+
+    int size = validTimeOfPid[pid].validEndTime.size();
+    if (valid && size > 0) {
+        validTimeOfPid[pid].validEndTime[size - 1] = timestamp;
+    }
+
+    validTimeOfPid[pid].lastTimeValid = valid;
 }
 
 void TimePair::functionDelayUpdate()
@@ -370,6 +374,33 @@ void TimePair::functionDelayUpdate()
             for (int i = 0; i < funcInfo.second.startTime.size(); i++) {
                 funcInfo.second.delay.emplace_back(funcInfo.second.endTime[i] - funcInfo.second.startTime[i]);
             }
+        }
+    }
+
+    Config &cfg = Config::getInstance();
+    int sched_switch_funcidx = cfg.funcCfgMap["sched_switch"].functionIndex;
+    TraceResolve &trace_resolve_inst = TraceResolve::getInstance();
+    for (const auto &line_info_tmp : trace_resolve_inst.getTraceLine()) {
+        std::string functionName = line_info_tmp.functionName;
+        if (cfg.funcCfgMap.count(functionName) == 0) {
+            continue;
+        }
+        int pid = line_info_tmp.pid;
+        int timestamp = line_info_tmp.timestamp;
+        int functionIndex = cfg.funcCfgMap[functionName].functionIndex;
+        if (functionIndex == sched_switch_funcidx) {
+            int nextPid = line_info_tmp.schedSwitchLine.nextPid;
+            functionDelayUpdateValidTimeLoop(pid, timestamp, line_info_tmp.traceValid[TRACE_VALID_SCHED_SWITCH_PREV]);
+            functionDelayUpdateValidTimeLoop(nextPid, timestamp, line_info_tmp.traceValid[TRACE_VALID_SCHED_SWITCH_NEXT]);
+        } else {
+            functionDelayUpdateValidTimeLoop(pid, timestamp, line_info_tmp.traceValid[TRACE_VALID_FUNC]);
+        }
+    }
+
+    for (auto &processInfo : validTimeOfPid) {
+        int pid = processInfo.first;
+        for (int i = 0; i < processInfo.second.validStartTime.size(); i++) {
+            validTimeOfPid[pid].validTime += (processInfo.second.validEndTime[i] - processInfo.second.validStartTime[i]);
         }
     }
 }
@@ -448,7 +479,7 @@ void TimePair::saveTimePairToFile()
             file << "maxStartTimeInvaild:" << funcInfo.second.maxStartTimeInvaild << ",";
             file << "minEndTimeInvalid:" << funcInfo.second.minEndTimeInvalid << "," << std::endl;
             file << "info num," << funcInfo.second.startTime.size() << ",valid info num," << funcInfo.second.summary.callTimes[DELAY_INFO_ALL] << ",";
-            file << "validStartTime," << validTimeOfPid[pid].validStartTime << ",validEndTime," << validTimeOfPid[pid].validEndTime << std::endl;
+            file << "procStartTime," << validTimeOfPid[pid].procStartTime << ",procEndTime," << validTimeOfPid[pid].procEndTime << std::endl;
             file << "startTime" << ",";
             for (const auto &startTime : funcInfo.second.startTime) {
                 file << std::fixed << std::setprecision(6) << startTime << ",";
@@ -544,14 +575,22 @@ void TimePair::saveDelayInfoToFile()
 }
 
 
-int TimePair::getProcessValidTime(const int &pid)
+int TimePair::getProcessTime(const int &pid)
 {
     if (validTimeOfPid.count(pid) != 0) {
-        return validTimeOfPid[pid].validEndTime - validTimeOfPid[pid].validStartTime;
+        return validTimeOfPid[pid].procTime;
     } else {
         return 0;
     }
+}
 
+int TimePair::getProcessValidTime(const int &pid)
+{
+    if (validTimeOfPid.count(pid) != 0) {
+        return validTimeOfPid[pid].validTime;
+    } else {
+        return 0;
+    }
 }
 
 void TimePair::timePairAnalysis()
