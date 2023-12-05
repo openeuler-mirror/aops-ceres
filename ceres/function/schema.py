@@ -67,30 +67,19 @@ CVE_SCAN_SCHEMA = {
 
 CVE_FIX_SCHEMA = {
     "type": "object",
-    "required": ["accepted", "check_items", "cves", "takeover"],
+    "required": ["accepted", "check_items", "rpms", "fix_type"],
     "properties": {
         "check_items": {"type": "array", "items": {"type": "string"}},
         "accepted": {"enum": [True, False]},
-        "takeover": {"enum": [True, False]},
-        "cves": {
+        "fix_type": {"enum": ["hotpatch", "coldpatch"]},
+        "rpms": {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["cve_id", "rpms"],
+                "required": ["installed_rpm", "available_rpm"],
                 "properties": {
-                    "cve_id": {"type": "string", "minLength": 1},
-                    "rpms": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["installed_rpm", "available_rpm", "fix_way"],
-                            "properties": {
-                                "installed_rpm": {"type": "string", "minLength": 1},
-                                "available_rpm": {"type": "string", "minLength": 1},
-                                "fix_way": {"enum": ["hotpatch", "coldpatch"]},
-                            },
-                        },
-                    },
+                    "installed_rpm": {"type": "string", "minLength": 1},
+                    "available_rpm": {"type": "string", "minLength": 1},
                 },
             },
         },
@@ -116,16 +105,8 @@ CVE_ROLLBACK_SCHEMA = {
 
 CONF_SYNC_SCHEMA = {
     "type": "object",
-    "required": [
-        "file_path",
-        "content"
-    ],
-    "properties": {
-        "file_path": {"type": "string", "minLength": 1},
-        "content": {"type": "string", "minLength": 1}
-    }
+    "required": ["file_path", "content"],
+    "properties": {"file_path": {"type": "string", "minLength": 1}, "content": {"type": "string", "minLength": 1}},
 }
 
-DIRECTORY_FILE_SCHEMA = {
-    "type": "string"
-}
+DIRECTORY_FILE_SCHEMA = {"type": "string"}
