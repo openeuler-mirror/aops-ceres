@@ -99,19 +99,10 @@ CVE_FIX_SCHEMA = {
 
 HOST_INFO_SCHEMA = {"type": "array", "items": {"enum": ["os", "cpu", "memory", "disk"]}}
 
-CVE_ROLLBACK_SCHEMA = {
+REMOVE_HOTPATCH_SCHEMA = {
     "type": "object",
     "required": ["cves"],
-    "properties": {
-        "cves": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": ["cve_id", "hotpatch"],
-                "properties": {"cve_id": {"type": "string", "minLength": 1}, "hotpatch": {"enum": [True, False]}},
-            },
-        }
-    },
+    "properties": {"cves": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}},
 }
 
 CONF_SYNC_SCHEMA = {
