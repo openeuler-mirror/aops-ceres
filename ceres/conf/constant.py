@@ -75,3 +75,8 @@ class CommandExitCode:
 class TaskExecuteRes:
     SUCCEED = "succeed"
     FAIL = "fail"
+
+
+class CveFixTaskType:
+    HOTPATCH = "hotpatch"
+    COLDPATCH = "coldpatch"

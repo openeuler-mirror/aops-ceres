@@ -28,13 +28,14 @@ from ceres.function.schema import (
     CONF_SYNC_SCHEMA,
     DIRECTORY_FILE_SCHEMA,
 )
+from ceres.function.check import PreCheck
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
 from ceres.manages.list_file_manage import ListFileManage
 from ceres.manages.sync_manage import SyncManage
-from ceres.manages.vulnerability_manage import VulnerabilityManage, check_kernel_consistency
+from ceres.manages.vulnerability_manage import VulnerabilityManage
 
 
 def register_on_manager(args: argparse.Namespace) -> NoReturn:
@@ -167,6 +168,7 @@ def cve_command_manage(args):
         if not validate_data(data, CVE_SCAN_SCHEMA):
             exit(1)
         status_code, cve_scan_info = VulnerabilityManage().cve_scan(data)
+        kernel_check, _ = PreCheck.kernel_consistency_check()
         print(
             json.dumps(
                 {
@@ -175,7 +177,7 @@ def cve_command_manage(args):
                     "fixed_cves": cve_scan_info.get("fixed_cves", []),
                     "os_version": Collect.get_os_version(),
                     "installed_packages": Collect.get_installed_packages(),
-                    "reboot": check_kernel_consistency(),
+                    "reboot": not kernel_check,
                 }
             )
         )
@@ -183,8 +185,8 @@ def cve_command_manage(args):
         data = convert_string_to_json(args.fix)
         if not validate_data(data, CVE_FIX_SCHEMA):
             exit(1)
-        status_code, cve_fix_result = VulnerabilityManage().cve_fix(data)
-        print(json.dumps(StatusCode.make_response_body((status_code, cve_fix_result))))
+        cve_fix_result = VulnerabilityManage().cve_fix(data)
+        print(json.dumps(cve_fix_result))
 
     elif args.remove_hotpatch:
         data = convert_string_to_json(args.remove_hotpatch)
