@@ -20,7 +20,7 @@ from ceres.function.register import register, register_info_to_dict
 from ceres.function.schema import (
     CHANGE_COLLECT_ITEMS_SCHEMA,
     CVE_FIX_SCHEMA,
-    CVE_ROLLBACK_SCHEMA,
+    REMOVE_HOTPATCH_SCHEMA,
     CVE_SCAN_SCHEMA,
     HOST_INFO_SCHEMA,
     REPO_SET_SCHEMA,
@@ -186,13 +186,11 @@ def cve_command_manage(args):
         status_code, cve_fix_result = VulnerabilityManage().cve_fix(data)
         print(json.dumps(StatusCode.make_response_body((status_code, cve_fix_result))))
 
-    elif args.rollback:
-        data = convert_string_to_json(args.rollback)
-        if not validate_data(data, CVE_ROLLBACK_SCHEMA):
+    elif args.remove_hotpatch:
+        data = convert_string_to_json(args.remove_hotpatch)
+        if not validate_data(data, REMOVE_HOTPATCH_SCHEMA):
             exit(1)
-        status_code, cve_rollback_result = VulnerabilityManage().cve_rollback(data.get("cves"))
-        res = StatusCode.make_response_body((status_code, {"rollback_result": cve_rollback_result}))
-        print(json.dumps(res))
+        print(json.dumps(VulnerabilityManage().remove_hotpatch(data.get("cves"))))
     else:
         print("Please check the input parameters!")
         exit(1)

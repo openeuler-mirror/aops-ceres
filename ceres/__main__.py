@@ -54,7 +54,7 @@ def main():
     cve_group.add_argument("--set-repo", type=str)
     cve_group.add_argument("--scan", type=str)
     cve_group.add_argument("--fix", type=str)
-    cve_group.add_argument("--rollback", type=str)
+    cve_group.add_argument("--remove-hotpatch", type=str)
     subparsers_cve.set_defaults(function=cve_command_manage)
 
     subparsers_sync = subparsers.add_parser("sync", help='sync conf file')
