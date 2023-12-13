@@ -86,6 +86,18 @@ CVE_FIX_SCHEMA = {
     },
 }
 
+CVE_ROLLBACK_SCHEMA = {
+    "type": "object",
+    "required": ["rollback_type", "installed_rpm", "target_rpm", "dnf_event_start", "dnf_event_end"],
+    "properties": {
+        "rollback_type": {"enum": ["hotpatch", "coldpatch"]},
+        "installed_rpm": {"type": "string", "minLength": 1},
+        "target_rpm": {"type": "string", "minLength": 1},
+        "dnf_event_start": {"type": ["integer", "null"], "minimum": 1},
+        "dnf_event_end": {"type": ["integer", "null"], "minimum": 1},
+    },
+}
+
 HOST_INFO_SCHEMA = {"type": "array", "items": {"enum": ["os", "cpu", "memory", "disk"]}}
 
 REMOVE_HOTPATCH_SCHEMA = {

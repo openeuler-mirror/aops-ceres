@@ -15,25 +15,27 @@ import json
 from typing import NoReturn
 
 from ceres.conf.constant import INSTALLABLE_PLUGIN, PLUGIN_WITH_CLASS
+from ceres.function.check import PreCheck
 from ceres.function.log import LOGGER
 from ceres.function.register import register, register_info_to_dict
 from ceres.function.schema import (
     CHANGE_COLLECT_ITEMS_SCHEMA,
+    CONF_SYNC_SCHEMA,
     CVE_FIX_SCHEMA,
-    REMOVE_HOTPATCH_SCHEMA,
+    CVE_ROLLBACK_SCHEMA,
     CVE_SCAN_SCHEMA,
+    DIRECTORY_FILE_SCHEMA,
     HOST_INFO_SCHEMA,
+    REMOVE_HOTPATCH_SCHEMA,
     REPO_SET_SCHEMA,
     STRING_ARRAY,
-    CONF_SYNC_SCHEMA,
-    DIRECTORY_FILE_SCHEMA,
 )
-from ceres.function.check import PreCheck
 from ceres.function.status import SUCCESS, StatusCode
 from ceres.function.util import convert_string_to_json, get_dict_from_file, plugin_status_judge, validate_data
 from ceres.manages import plugin_manage
 from ceres.manages.collect_manage import Collect
 from ceres.manages.list_file_manage import ListFileManage
+from ceres.manages.rollback_manage import RollbackManage
 from ceres.manages.sync_manage import SyncManage
 from ceres.manages.vulnerability_manage import VulnerabilityManage
 
@@ -187,12 +189,17 @@ def cve_command_manage(args):
             exit(1)
         cve_fix_result = VulnerabilityManage().cve_fix(data)
         print(json.dumps(cve_fix_result))
-
     elif args.remove_hotpatch:
         data = convert_string_to_json(args.remove_hotpatch)
         if not validate_data(data, REMOVE_HOTPATCH_SCHEMA):
             exit(1)
         print(json.dumps(VulnerabilityManage().remove_hotpatch(data.get("cves"))))
+    elif args.rollback:
+        data = convert_string_to_json(args.rollback)
+        if not validate_data(data, CVE_ROLLBACK_SCHEMA):
+            exit(1)
+        cve_rollback_result = RollbackManage().rollback(data)
+        print(json.dumps(cve_rollback_result))
     else:
         print("Please check the input parameters!")
         exit(1)
