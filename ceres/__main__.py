@@ -15,10 +15,10 @@ import argparse
 from ceres.command import (
     collect_command_manage,
     cve_command_manage,
+    list_file_manage,
     plugin_command_manage,
     register_on_manager,
     sync_conf_manage,
-    list_file_manage,
 )
 from ceres.function.log import LOGGER
 
@@ -55,6 +55,7 @@ def main():
     cve_group.add_argument("--scan", type=str)
     cve_group.add_argument("--fix", type=str)
     cve_group.add_argument("--remove-hotpatch", type=str)
+    cve_group.add_argument("--rollback", type=str)
     subparsers_cve.set_defaults(function=cve_command_manage)
 
     subparsers_sync = subparsers.add_parser("sync", help='sync conf file')
