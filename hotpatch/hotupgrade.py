@@ -13,6 +13,7 @@
 from __future__ import print_function
 
 from time import sleep
+from typing import Tuple
 
 import dnf.base
 import dnf.exceptions
@@ -28,6 +29,8 @@ from .upgrade_en import UpgradeEnhanceCommand
 from .version import Versions
 
 EMPTY_TAG = "-"
+SUCCEED = 0
+FAIL = 255
 
 
 @dnf.plugin.register_command
@@ -94,9 +97,14 @@ class HotupgradeCommand(dnf.cli.Command):
             logger.info(_('No hot patches marked for install.'))
             return
 
-        applied_old_patches = self._get_applied_old_patch(list(available_hp_dict.values()))
-        if applied_old_patches:
-            self._remove_hot_patches(applied_old_patches)
+        uneffectived_old_patches, effectived_old_patches = self._get_applied_old_patch(list(available_hp_dict.values()))
+        # remove effectived hp from self.hp_list and available_hp_dict
+        effectived_hp_list = [key for key, value in available_hp_dict.items() if value in effectived_old_patches]
+        self.hp_list = [hp for hp in self.hp_list if hp not in effectived_hp_list]
+        available_hp_dict = {key: value for key, value in available_hp_dict.items() if value not in effectived_hp_list}
+
+        if uneffectived_old_patches:
+            self._remove_hot_patches(uneffectived_old_patches)
         else:
             self.syscare.save()
         success = self._install_rpm_pkg(list(available_hp_dict.keys()))
@@ -143,14 +151,24 @@ class HotupgradeCommand(dnf.cli.Command):
             if str(ts_item.pkg) == self.kernel_coldpatch:
                 self.is_kernel_coldpatch_installed = True
 
-        self.keep_hp_operation_atomic(is_all_kernel_hp_actived, target_remove_hp)
+        is_task_success = True
+        is_task_success &= self.keep_hp_operation_atomic(is_all_kernel_hp_actived, target_remove_hp)
 
         if self.is_need_accept_kernel_hp and acceptable_hp:
+            is_accept_success = True
             logger.info(_('No available kernel cold patch for takeover, gonna accept available kernel hot patch.'))
             for hp in acceptable_hp:
-                self._accept_kernel_hp(hp)
+                pkg_info = self._parse_hp_name(hp)
+                if pkg_info['target_name'] != "kernel":
+                    continue
+                is_accept_success &= False if self._accept_hp(hp) != SUCCEED else False
+            # if need accept operation but failed, it indicates hotupgrade task failed
+            is_task_success &= is_accept_success
 
-    def keep_hp_operation_atomic(self, is_all_kernel_hp_actived, target_remove_hp):
+        if not is_task_success:
+            exit(1)
+
+    def keep_hp_operation_atomic(self, is_all_kernel_hp_actived, target_remove_hp) -> bool:
         """
         Keep hotpatch related operation atomic. Once one kernel hotpatch is not successfully activated or
         kabi check fails, uninstall the kernel coldpatch. And unsuccessfully activated hotpatch package
@@ -159,9 +177,13 @@ class HotupgradeCommand(dnf.cli.Command):
         Args:
             is_all_kernel_hp_actived(bool): are all kernel related hotpatches activated
             target_remove_hp(list): target remove hotpatch list
+
+        Returns:
+            bool: if hotupgrade task success
         """
         upgrade_en = UpgradeEnhanceCommand(self.cli)
 
+        is_task_success = True
         if self.is_kernel_coldpatch_installed:
             if not is_all_kernel_hp_actived:
                 logger.info(_('Gonna remove %s due to some kernel hotpatch activation failed.'), self.kernel_coldpatch)
@@ -177,8 +199,12 @@ class HotupgradeCommand(dnf.cli.Command):
 
         if target_remove_hp:
             logger.info(_('Gonna remove unsuccessfully activated hotpatch rpm.'))
+            # when processing remove operation, do not achieve the expected result of activating hotpatch rpm,
+            # it indicates that the hotupgrade task failed
+            is_task_success &= False
             for hotpatch in target_remove_hp:
                 upgrade_en.remove_rpm(hotpatch)
+        return is_task_success
 
     def _apply_hp(self, hp_full_name):
         pkg_info = self._parse_hp_name(hp_full_name)
@@ -264,7 +290,7 @@ class HotupgradeCommand(dnf.cli.Command):
         return hp_map
 
     @staticmethod
-    def _get_applied_old_patch(available_hp_list: list) -> list:
+    def _get_applied_old_patch(available_hp_list: list) -> Tuple[list, list]:
         """
         get targets' applied accumulative hot patches.
         User can install and apply multiple sgl (single) hot patches because the rpm name is different,
@@ -273,9 +299,11 @@ class HotupgradeCommand(dnf.cli.Command):
             available_hp_list:  e.g. ['redis-1.0-1/ACC-1-1', 'redis-1.0-1/SGL_CVE_2022_1-1-1']
 
         Returns:
-            list: applied hot patches.  e.g. ['redis-1.0-1/ACC-1-1']
+            Tuple[str, str]: a tuple containing two elements (uneffectived hot patches, effectived hot patches).
+            e.g. (['redis-1.0-1/ACC-1-1'], ['redis-1.0-1/SGL_CVE_2022_3047-1-1'])
         """
-        hotpatch_set = set()
+        uneffectived_hotpatch_set = set()
+        effectived_hotpatch_set = set()
         hps_info = Syscare.list()
         for hp_info in hps_info:
             # hp_info[Name] is the middle column of syscare list. format: {target_rpm_name}/{hp_name}/{binary_file}
@@ -297,9 +325,12 @@ class HotupgradeCommand(dnf.cli.Command):
                     hp_info["Status"],
                     binary_file,
                 )
-                if hotpatch not in hotpatch_set:
-                    hotpatch_set.add(hotpatch)
-        return list(hotpatch_set)
+                if hp_info["Status"] in ["ACTIVED", "ACCEPTED"]:
+                    effectived_hotpatch_set.add(hotpatch)
+                    continue
+                if hotpatch not in uneffectived_hotpatch_set:
+                    uneffectived_hotpatch_set.add(hotpatch)
+        return list(uneffectived_hotpatch_set), list(effectived_hotpatch_set)
 
     def _remove_hot_patches(self, applied_old_patches: list) -> None:
         # output = Output(self.base, dnf.conf.Conf())
@@ -548,19 +579,21 @@ class HotupgradeCommand(dnf.cli.Command):
         parsed_nevra = parsed_nevras[0]
         return parsed_nevra.name, "%s-%s" % (parsed_nevra.version, parsed_nevra.release)
 
-    def _accept_kernel_hp(self, hp_full_name: str):
+    def _accept_hp(self, hp_full_name: str) -> int:
         """
-        accept kernel hot patch
+        accept hot patch
 
         Args:
             str: hp_full_name: full name of hot patch. e.g. patch-kernel-5.10.0-1-ACC-1-1.x86_64
+
+        Returns:
+            int: status
         """
         pkg_info = self._parse_hp_name(hp_full_name)
-        if pkg_info['target_name'] != "kernel":
-            return
         hp_subname = self._get_hp_subname_for_syscare(pkg_info)
         output, status = self.syscare.accept(hp_subname)
         if status:
-            logger.info(_('Accept kernel hot patch failed: %s.'), hp_subname)
+            logger.info(_('Accept hot patch failed: %s.'), hp_subname)
         else:
-            logger.info(_('Accept kernel hot patch succeed: %s.'), hp_subname)
+            logger.info(_('Accept hot patch succeed: %s.'), hp_subname)
+        return status
