@@ -161,7 +161,7 @@ class HotupgradeCommand(dnf.cli.Command):
                 pkg_info = self._parse_hp_name(hp)
                 if pkg_info['target_name'] != "kernel":
                     continue
-                is_accept_success &= False if self._accept_hp(hp) != SUCCEED else False
+                is_accept_success &= False if self._accept_hp(hp) != SUCCEED else True
             # if need accept operation but failed, it indicates hotupgrade task failed
             is_task_success &= is_accept_success
 
