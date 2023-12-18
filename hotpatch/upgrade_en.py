@@ -97,7 +97,10 @@ class UpgradeEnhanceCommand(dnf.cli.Command):
                     print('Gonna remove %s due to kabi check failed.' % kernel_pkg)
                     # rebuild rpm database for processing kernel rpm remove operation
                     self.rebuild_rpm_db()
+                    # when processing remove operation, do not achieve the expected result of installing related rpm,
+                    # it indicates that the upgrade task failed
                     self.remove_rpm(kernel_pkg)
+                    exit(1)
 
     def remove_rpm(self, pkg: str):
         """
@@ -113,11 +116,8 @@ class UpgradeEnhanceCommand(dnf.cli.Command):
         if return_code != SUCCEED:
             print('Remove package failed: %s.' % pkg)
             print(output)
-            exit(1)
         else:
             print('Remove package succeed: %s.' % pkg)
-            # do not achieve the expected result of installing related rpm
-            exit(1)
 
     def rebuild_rpm_db(self):
         """
