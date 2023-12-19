@@ -43,6 +43,7 @@ class HotupgradeCommand(dnf.cli.Command):
     is_need_accept_kernel_hp = False
     is_kernel_coldpatch_installed = False
     kernel_coldpatch = ''
+    previous_boot_kernel = None
 
     @staticmethod
     def set_argparser(parser):
@@ -80,6 +81,9 @@ class HotupgradeCommand(dnf.cli.Command):
             commands._checkEnabledRepo(self.base)
 
     def run(self):
+        self.upgrade_en = UpgradeEnhanceCommand(self.cli)
+        self.previous_boot_kernel = self.upgrade_en.get_default_boot_kernel()
+
         if self.opts.pkg_specs:
             self.hp_list = self.opts.pkg_specs
         elif self.opts.cves or self.opts.advisory:
@@ -181,20 +185,21 @@ class HotupgradeCommand(dnf.cli.Command):
         Returns:
             bool: if hotupgrade task success
         """
-        upgrade_en = UpgradeEnhanceCommand(self.cli)
-
         is_task_success = True
         if self.is_kernel_coldpatch_installed:
             if not is_all_kernel_hp_actived:
                 logger.info(_('Gonna remove %s due to some kernel hotpatch activation failed.'), self.kernel_coldpatch)
-                upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.upgrade_en.rebuild_rpm_db()
+                self.upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.upgrade_en.restore_default_boot_kernel(self.previous_boot_kernel)
                 self.is_need_accept_kernel_hp = False
             # process kabi check
-            elif not upgrade_en.kabi_check(str(self.kernel_coldpatch)) and not self.opts.force:
+            elif not self.upgrade_en.kabi_check(str(self.kernel_coldpatch)) and not self.opts.force:
                 logger.info(_('Gonna remove %s due to Kabi check failed.'), self.kernel_coldpatch)
                 # rebuild rpm database for processing kernel rpm remove operation
-                upgrade_en.rebuild_rpm_db()
-                upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.upgrade_en.rebuild_rpm_db()
+                self.upgrade_en.remove_rpm(str(self.kernel_coldpatch))
+                self.upgrade_en.restore_default_boot_kernel(self.previous_boot_kernel)
                 self.is_need_accept_kernel_hp = True
 
         if target_remove_hp:
@@ -203,7 +208,7 @@ class HotupgradeCommand(dnf.cli.Command):
             # it indicates that the hotupgrade task failed
             is_task_success &= False
             for hotpatch in target_remove_hp:
-                upgrade_en.remove_rpm(hotpatch)
+                self.upgrade_en.remove_rpm(hotpatch)
         return is_task_success
 
     def _apply_hp(self, hp_full_name):
