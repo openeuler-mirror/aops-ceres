@@ -12,6 +12,7 @@
 # ******************************************************************************/
 import gzip
 import subprocess
+from typing import Optional
 
 import dnf
 from dnf.cli import commands
@@ -36,6 +37,7 @@ def cmd_output(cmd):
 @dnf.plugin.register_command
 class UpgradeEnhanceCommand(dnf.cli.Command):
     SYMVERS_FILE = "/boot/symvers-%s.gz"
+    previous_boot_kernel = None
 
     aliases = ['upgrade-en']
     summary = _(
@@ -80,7 +82,64 @@ class UpgradeEnhanceCommand(dnf.cli.Command):
         self.skipped_grp_specs = None
 
     def run(self):
+        # if kernel kabi check failed, need change back to the default boot kernel version
+        self.previous_boot_kernel = self.get_default_boot_kernel()
         self.upgrade()
+
+    @staticmethod
+    def get_default_boot_kernel() -> Optional[str]:
+        """
+        Get default boot kernel version.
+
+        Returns:
+            str: default boot kernel
+        """
+        cmd = ["grubby", "--default-kernel"]
+        # 'grubby --default-kernel' shows boot default kernel version in the system
+        # e.g.
+        # [root@openEuler ~]# grubby --default-kernel
+        # /boot/vmlinuz-4.19.90-2112.8.0.0131.oe1.x86_64
+        output, return_code = cmd_output(cmd)
+        default_boot_kernel = output.split('\n')[0]
+        if return_code != SUCCEED:
+            return None
+        return default_boot_kernel
+
+    @staticmethod
+    def restore_default_boot_kernel(target_boot_kernel: str):
+        """
+        Restore default boot kernel version.
+
+        Args:
+            target_boot_kernel(str): target boot kernel
+        """
+        # 'grubby --set-default=/boot/vmlinuz-4.19.90-2112.8.0.0131.oe1.x86_64' can set default boot kernel version
+        # to kernel-4.19.90-2112.8.0.0131.oe1.x86_64
+        if not target_boot_kernel:
+            print("Get default boot kernel before upgrade failed.")
+            return
+
+        cmd = ["grubby", "--set-default=%s" % target_boot_kernel]
+        try:
+            # e.g. 4.19.90-2112.8.0.0131.oe1.x86_64
+            target_boot_kernel_vere = target_boot_kernel.split('-', 1)[1]
+            target_boot_kernel_nevra = "kernel-%s" % target_boot_kernel_vere
+        except IndexError as e:
+            print(
+                "Parse target boot kernel failed. Please check if target boot kernel path is correct: %s."
+                % target_boot_kernel,
+                "\nRestore the default boot kernel failed. Please manually check the default boot kernel to prevent unexpected kernel switching after reboot.",
+            )
+            return
+
+        output, return_code = cmd_output(cmd)
+        if return_code != SUCCEED:
+            print(
+                "Restore the default boot kernel failed: %s. Please manually check the default boot kernel to prevent unexpected kernel switching after reboot."
+                % target_boot_kernel_nevra
+            )
+            return
+        print("Restore the default boot kernel succeed: %s." % target_boot_kernel_nevra)
 
     def run_transaction(self):
         """
@@ -100,6 +159,8 @@ class UpgradeEnhanceCommand(dnf.cli.Command):
                     # when processing remove operation, do not achieve the expected result of installing related rpm,
                     # it indicates that the upgrade task failed
                     self.remove_rpm(kernel_pkg)
+                    # change back to the default boot kernel version before upgrade
+                    self.restore_default_boot_kernel(self.previous_boot_kernel)
                     exit(1)
 
     def remove_rpm(self, pkg: str):
