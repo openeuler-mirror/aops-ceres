@@ -237,19 +237,68 @@ class RollbackManage:
             log.append(result_log)
         if result_code != TaskExecuteRes.SUCCEED:
             return TaskExecuteRes.FAIL, os.linesep.join(log)
+        
+        result_code, result_log = self._remove_installed_rpm(installed_rpm)
+        if result_log:
+            log.append(result_log)
+        if result_code != TaskExecuteRes.SUCCEED:
+            return TaskExecuteRes.FAIL, os.linesep.join(log)
 
         result_code, result_log = self._change_boot_kernel_version(target_rpm)
         if result_log:
             log.append(result_log)
         if result_code != TaskExecuteRes.SUCCEED:
             return TaskExecuteRes.FAIL, os.linesep.join(log)
-
+        
         return TaskExecuteRes.SUCCEED, os.linesep.join(log)
-
+    
+    def _remove_installed_rpm(self, installed_rpm: str) -> Tuple[str, str]:
+        """
+        Remove the installed rpm if the installed rpm is not in use.
+        
+        Args:
+            installed_rpm(str): the installed kernel in executed fix task
+            
+        Returns:
+            Tuple[str, str]: a tuple containing two elements (remove result, log)
+        """
+        log = []
+        code, stdout, stderr = execute_shell_command(f"rpm -qa | grep {installed_rpm}")
+        # 'rpm -qa' shows installed rpm
+        # e.g.
+        # [root@openEuler ~]# rpm -qa | grep kernel-4.19.90-2112.8.0.0131.oe1.x86_64
+        # kernel-4.19.90-2112.8.0.0131.oe1.x86_64
+        if code != CommandExitCode.SUCCEED or installed_rpm not in stdout:
+            tmp_log = f"The {installed_rpm} is not installed. Please check the input parameter."
+            LOGGER.error(tmp_log)
+            return TaskExecuteRes.FAIL, tmp_log
+        
+        code, current_evra, stderr = execute_shell_command(f"uname -r")
+        # 'uname -r' show the kernel version-release.arch of the current system
+        # e.g.
+        # [root@openEuler ~]# uname -r
+        # 5.10.0-136.12.0.86.oe2203sp1.x86_64
+        if code != CommandExitCode.SUCCEED:
+            LOGGER.error(stderr)
+            return TaskExecuteRes.FAIL, current_evra + stderr
+        
+        # version-release.arch
+        installed_evra = installed_rpm.split("-", 1)[1]
+        
+        if installed_evra == current_evra:
+            return TaskExecuteRes.SUCCEED, f"Preserve the {installed_rpm} due to it is in use."
+        
+        code, stdout, stderr = execute_shell_command(f"dnf remove {installed_rpm} -y")
+        if code != CommandExitCode.SUCCEED:
+            LOGGER.error(stderr)
+            return TaskExecuteRes.FAIL, stdout + stderr
+        
+        return TaskExecuteRes.SUCCEED, stdout
+        
     def _check_boot_kernel_version(self, installed_rpm: str) -> Tuple[str, str]:
         """
         Check if the boot kernel version is consistent with the installed kernel version. If not, it indicates
-        that the executed fix task has been tampered.
+        that the environment after executed fix task has been tampered.
 
         Args:
             installed_rpm(str): the installed rpm in executed fix task
@@ -270,8 +319,8 @@ class RollbackManage:
         evra = installed_rpm.split("-", 1)[1]
         if evra not in stdout:
             tmp_log = (
-                "The grubby default kernel version is not consistent with installed kernel version. "
-                "The executed fix task has been tampered."
+                f"The default boot kernel version is not consistent with {installed_rpm}. "
+                "The environment after executed fix task has been tampered."
             )
             LOGGER.error(tmp_log)
             return TaskExecuteRes.FAIL, tmp_log
@@ -281,7 +330,7 @@ class RollbackManage:
     def _check_current_kernel_version(self, installed_rpm: str, target_rpm: str) -> Tuple[str, str]:
         """
         Check if the current kernel version is consistent with the installed kernel version or target kernel
-        version. If not, it indicates that the executed fix task has been tampered.
+        version. If not, it indicates that the environment after executed fix task has been tampered.
 
         Args:
             installed_rpm(str): the installed rpm in executed fix task
@@ -304,8 +353,8 @@ class RollbackManage:
 
         if installed_evra != current_evra and target_evra != current_evra:
             tmp_log = (
-                "The current kernel version is not consistent with installed kernel version or target kernel version. "
-                "The executed fix task has been tampered."
+                f"The current kernel version is neither {installed_rpm} nor {target_rpm}. "
+                "The environment after executed fix task has been tampered."
             )
             LOGGER.error(tmp_log)
             return TaskExecuteRes.FAIL, tmp_log
@@ -314,7 +363,8 @@ class RollbackManage:
 
     def _check_if_target_rpm_installed(self, target_rpm: str) -> Tuple[str, str]:
         """
-        Check if the target kernel is installed. If not, it indicates that the executed fix task has been tampered.
+        Check if the target kernel is installed. If not, it indicates that the environment after executed fix 
+        task has been tampered.
 
         Args:
             target_rpm(str): the target rpm for rollback task
@@ -328,7 +378,7 @@ class RollbackManage:
         # [root@openEuler ~]# rpm -qa | grep kernel-4.19.90-2112.8.0.0131.oe1.x86_64
         # kernel-4.19.90-2112.8.0.0131.oe1.x86_64
         if code != CommandExitCode.SUCCEED or target_rpm not in stdout:
-            tmp_log = "The target kernel of rollback task is not installed. The executed fix task has been tampered."
+            tmp_log = "The target kernel of rollback task is not installed. The environment after executed fix task has been tampered."
             LOGGER.error(tmp_log)
             return TaskExecuteRes.FAIL, tmp_log
 
@@ -336,7 +386,7 @@ class RollbackManage:
 
     def _change_boot_kernel_version(self, target_rpm: str) -> Tuple[str, str]:
         """
-        Change the grubby default kernel version to target kernel version.
+        Change the default boot kernel version to target kernel version.
 
         Args:
             target_rpm(str): the target rpm for rollback task
@@ -358,4 +408,4 @@ class RollbackManage:
             LOGGER.error(stderr)
             return TaskExecuteRes.FAIL, stdout + stderr
 
-        return TaskExecuteRes.SUCCEED, f"Change boot kernel version to {target_rpm} successfully."
+        return TaskExecuteRes.SUCCEED, f"Change default boot kernel version to {target_rpm} successfully."
