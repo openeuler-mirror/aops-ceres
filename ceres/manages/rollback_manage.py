@@ -238,7 +238,7 @@ class RollbackManage:
         if result_code != TaskExecuteRes.SUCCEED:
             return TaskExecuteRes.FAIL, os.linesep.join(log)
         
-        result_code, result_log = self._remove_installed_rpm(installed_rpm)
+        result_code, result_log = self._remove_kernel_rpm(installed_rpm)
         if result_log:
             log.append(result_log)
         if result_code != TaskExecuteRes.SUCCEED:
@@ -252,9 +252,9 @@ class RollbackManage:
         
         return TaskExecuteRes.SUCCEED, os.linesep.join(log)
     
-    def _remove_installed_rpm(self, installed_rpm: str) -> Tuple[str, str]:
+    def _remove_kernel_rpm(self, installed_rpm: str) -> Tuple[str, str]:
         """
-        Remove the installed rpm if the installed rpm is not in use.
+        Remove the kernel rpm if the installed kernel rpm is not in use.
         
         Args:
             installed_rpm(str): the installed kernel in executed fix task
@@ -262,7 +262,6 @@ class RollbackManage:
         Returns:
             Tuple[str, str]: a tuple containing two elements (remove result, log)
         """
-        log = []
         code, stdout, stderr = execute_shell_command(f"rpm -qa | grep {installed_rpm}")
         # 'rpm -qa' shows installed rpm
         # e.g.
