@@ -15,7 +15,7 @@ import json
 import os
 import shlex
 import subprocess
-from typing import Any, Tuple, NoReturn
+from typing import Union, Tuple, NoReturn
 
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
@@ -43,24 +43,29 @@ def load_conf(file_path: str) -> configparser.RawConfigParser:
     return cf
 
 
-def validate_data(data: Any, schema: dict) -> bool:
+def validate_data(data: Union[str, dict], schema: dict) -> bool:
     """
-    validate data type which is expected
+    Validate data against JSON schema
 
     Args:
-        data (object): which need to validate
-        schema (dict): expected data model
+        data: Data to be validated (JSON string or dictionary)
+        schema: json schema
 
     Returns:
-        bool
-
+        Tuple[bool, data]
+        a tuple containing two elements (validate result, validated data)).
     """
     try:
+        if isinstance(data, str):
+            data = json.loads(data)
         validate(instance=data, schema=schema)
-        return True
-    except ValidationError as e:
-        LOGGER.error(e.message)
-        return False
+        return True, data
+    except json.decoder.JSONDecodeError:
+        LOGGER.error("Params error:\nFailed to parse json, please check whether the input data is correct.")
+        return False, {}
+    except ValidationError as error:
+        LOGGER.error(f"Params error:{error.message}")
+        return False, {}
 
 
 def execute_shell_command(command: str, **kwargs) -> Tuple[int, str, str]:
@@ -214,21 +219,3 @@ def update_ini_data_value(file_path: str, section: str, option: str, value) -> N
     cf[section] = {option: value}
     with open(file_path, 'w') as f:
         cf.write(f)
-
-
-def convert_string_to_json(string: str) -> Any:
-    """
-    convert json string to python object
-
-    Args:
-        string: json string
-
-    Returns:
-        list object or dict object
-    """
-    try:
-        res = json.loads(string)
-        return res
-    except json.decoder.JSONDecodeError as error:
-        LOGGER.error(error)
-        return PARAM_ERROR

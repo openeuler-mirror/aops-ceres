@@ -111,5 +111,3 @@ CONF_SYNC_SCHEMA = {
     "required": ["file_path", "content"],
     "properties": {"file_path": {"type": "string", "minLength": 1}, "content": {"type": "string", "minLength": 1}},
 }
-
-DIRECTORY_FILE_SCHEMA = {"type": "string"}

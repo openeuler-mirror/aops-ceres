@@ -12,7 +12,7 @@
 # ******************************************************************************/
 import unittest
 
-from ceres.function.register import register, register_info_to_dict
+from ceres.manages.register_manage import register, register_info_to_dict
 from ceres.function.status import PARAM_ERROR
 
 
