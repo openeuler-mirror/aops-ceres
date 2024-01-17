@@ -18,7 +18,7 @@ setup(
     install_requires=INSTALL_REQUIRES,
     packages=find_packages(),
     data_files=[('/etc/aops', ['conf/ceres.conf']), ('/opt/aops', ['conf/register_example.json'])],
-    entry_points={'console_scripts': ['aops-ceres=ceres.__main__:main']},
+    entry_points={'console_scripts': ['aops-ceres=ceres.main:main']},
     long_description="""\
     GroupDesc
     """,
