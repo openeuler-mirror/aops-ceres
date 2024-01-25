@@ -14,6 +14,7 @@ import grp
 import os
 import pwd
 import re
+import platform
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Any, Dict, List, Union
 import xml.etree.ElementTree as ET
@@ -156,12 +157,7 @@ class Collect:
         Returns:
             str
         """
-        code, stdout, stderr = execute_shell_command("uname -r")
-
-        if code != CommandExitCode.SUCCEED:
-            LOGGER.warning('Failed to get current kernel version, please check uname command and try again')
-            LOGGER.warning(stderr)
-        return stdout
+        return platform.uname().release
 
     @staticmethod
     def _get_cpu_info() -> Dict[str, str]:
