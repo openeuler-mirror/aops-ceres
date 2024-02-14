@@ -105,7 +105,7 @@ class Collect:
         Returns:
             str: e.g openEuler 21.09
         """
-        _, stdout, _ = execute_shell_command("cat /etc/os-release")
+        _, stdout, _ = execute_shell_command(["cat /etc/os-release"])
         res = re.search('(?=PRETTY_NAME=).+', stdout)
 
         if res:
@@ -141,7 +141,7 @@ class Collect:
         Returns:
             str
         """
-        _, stdout, _ = execute_shell_command("dmidecode -t bios")
+        _, stdout, _ = execute_shell_command(["dmidecode -t bios"])
 
         res = re.search('(?=Version:).+', stdout)
         if res:
@@ -177,7 +177,7 @@ class Collect:
                     "l3_cache": string
                 }
         """
-        _, stdout, _ = execute_shell_command("lscpu", **{"env": {"LANG": "en_US.utf-8"}})
+        _, stdout, _ = execute_shell_command(["lscpu"], **{"env": {"LANG": "en_US.utf-8"}})
 
         info_list = re.findall('.+:.+', stdout)
 
@@ -210,7 +210,7 @@ class Collect:
         Returns:
             str: memory size
         """
-        _, stdout, _ = execute_shell_command("lsmem")
+        _, stdout, _ = execute_shell_command(["lsmem"])
 
         res = re.search("(?=Total online memory:).+", stdout)
         if res:
@@ -241,7 +241,7 @@ class Collect:
         """
         res = {'size': self.__get_total_online_memory() or None, "total": None, "info": []}
 
-        code, memory_data, _ = execute_shell_command("dmidecode -t memory")
+        code, memory_data, _ = execute_shell_command(["dmidecode -t memory"])
 
         # dmidecode -t memory
         # e.g
@@ -302,7 +302,7 @@ class Collect:
                     }
                 ]
         """
-        code, stdout, _ = execute_shell_command("lshw -xml -c disk")
+        code, stdout, _ = execute_shell_command(["lshw -xml -c disk"])
         if code != CommandExitCode.SUCCEED:
             LOGGER.error(stdout)
             return []
@@ -380,7 +380,7 @@ class Collect:
         Returns:
             uuid(str)
         """
-        code, stdout, _ = execute_shell_command("dmidecode|grep UUID")
+        code, stdout, _ = execute_shell_command(["dmidecode", "grep UUID"])
         if code == CommandExitCode.SUCCEED:
             return stdout.replace("-", "").split(':')[1].strip()
         return ""
@@ -416,7 +416,7 @@ class Collect:
                 }]
         """
 
-        code, source_name_info, _ = execute_shell_command("rpm -qi kernel|grep .src.rpm")
+        code, source_name_info, _ = execute_shell_command(["rpm -qi kernel", "grep .src.rpm"])
         if code != CommandExitCode.SUCCEED:
             LOGGER.error("Failed to query installed packages.")
             return []
