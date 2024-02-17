@@ -12,6 +12,7 @@
 # ******************************************************************************/
 from .hotpatch import Hotpatch
 
+
 class Advisory(object):
     __slots__ = ['_id', '_adv_type', '_title', '_severity', '_description', '_updated', '_hotpatches', '_cves']
 
@@ -19,7 +20,7 @@ class Advisory(object):
         """
         id(str): the id of advisory
         adv_type(str): advisory type
-        title(str): advisory title 
+        title(str): advisory title
         severity(str): advisory severity
         description(str): advisory description
         updated(str): advisory updated time

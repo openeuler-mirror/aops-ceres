@@ -15,16 +15,12 @@
 # Date: 2023/6/14 16:31
 import os
 from ceres.function.log import LOGGER
-from ceres.function.status import (
-    FILE_NOT_FOUND,
-    UNKNOWN_ERROR,
-    SUCCESS
-)
+from ceres.function.status import UNKNOWN_ERROR, SUCCESS
 
 
 class SyncManage:
     """
-       Sync managed conf to the host
+    Sync managed conf to the host
     """
 
     @staticmethod

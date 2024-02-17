@@ -238,7 +238,7 @@ class RollbackManage:
             log.append(result_log)
         if result_code != TaskExecuteRes.SUCCEED:
             return TaskExecuteRes.FAIL, os.linesep.join(log)
-        
+
         result_code, result_log = self._remove_kernel_rpm(installed_rpm)
         if result_log:
             log.append(result_log)
@@ -250,16 +250,16 @@ class RollbackManage:
             log.append(result_log)
         if result_code != TaskExecuteRes.SUCCEED:
             return TaskExecuteRes.FAIL, os.linesep.join(log)
-        
+
         return TaskExecuteRes.SUCCEED, os.linesep.join(log)
-    
+
     def _remove_kernel_rpm(self, installed_rpm: str) -> Tuple[str, str]:
         """
         Remove the kernel rpm if the installed kernel rpm is not in use.
-        
+
         Args:
             installed_rpm(str): the installed kernel in executed fix task
-            
+
         Returns:
             Tuple[str, str]: a tuple containing two elements (remove result, log)
         """
@@ -272,25 +272,25 @@ class RollbackManage:
             tmp_log = f"The {installed_rpm} is not installed. Please check the input parameter."
             LOGGER.error(tmp_log)
             return TaskExecuteRes.FAIL, tmp_log
-        
+
         current_evra = platform.uname().release
         if not current_evra:
             LOGGER.error("Query current kernel info failed!")
             return TaskExecuteRes.FAIL, current_evra
-        
+
         # version-release.arch
         installed_evra = installed_rpm.split("-", 1)[1]
-        
+
         if installed_evra == current_evra:
             return TaskExecuteRes.SUCCEED, f"Preserve the {installed_rpm} due to it is in use."
-        
+
         code, stdout, stderr = execute_shell_command([f"dnf remove {installed_rpm} -y"])
         if code != CommandExitCode.SUCCEED:
             LOGGER.error(stderr)
             return TaskExecuteRes.FAIL, stdout + stderr
-        
+
         return TaskExecuteRes.SUCCEED, stdout
-        
+
     def _check_boot_kernel_version(self, installed_rpm: str) -> Tuple[str, str]:
         """
         Check if the boot kernel version is consistent with the installed kernel version. If not, it indicates
