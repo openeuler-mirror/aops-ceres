@@ -12,12 +12,13 @@
 # ******************************************************************************/
 from .hotpatch import Hotpatch
 
+
 class Cve(object):
     __slots__ = ['_cve_id', '_hotpatches']
 
     def __init__(self, id, **kwargs):
         """
-        id(str): cve id 
+        id(str): cve id
         """
         self._cve_id = id
         self._hotpatches = []

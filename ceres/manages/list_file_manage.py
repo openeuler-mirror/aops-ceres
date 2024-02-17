@@ -21,7 +21,7 @@ from ceres.function.status import FILE_NOT_FOUND, UNKNOWN_ERROR, SUCCESS, PARAM_
 
 class ListFileManage:
     """
-       list directory file
+    list directory file
     """
 
     @staticmethod
