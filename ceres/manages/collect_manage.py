@@ -311,7 +311,7 @@ class Collect:
             tree = ET.ElementTree(ET.fromstring(stdout))
         except ET.ParseError as error:
             LOGGER.error(error)
-            LOGGER.warning("disk info parse error, please check command 'lshw -xml -c disk'")
+            LOGGER.warning("Disk info parse error, please check command 'lshw -xml -c disk'")
             return []
 
         disk_list = tree.findall("node")
@@ -359,7 +359,7 @@ class Collect:
             with open(file_path, 'r', encoding='utf8') as f:
                 content = f.read()
         except (OSError, ValueError) as error:
-            LOGGER.error(f'failed to read file named {file_path} with error message:\n {error}')
+            LOGGER.error(f'Failed to read file named {file_path} with error message:\n {error}')
             return {}
         file_attr = os.stat(file_path)
         file_mode = oct(file_attr.st_mode)[4:]
@@ -528,7 +528,7 @@ class Collect:
         for file_path in config_path_list:
             if not os.path.exists(file_path) or not os.path.isfile(file_path):
                 result['fail_files'].append(file_path)
-                LOGGER.error(f"file {file_path} cannot be found or is not a file")
+                LOGGER.error(f"File:{file_path} cannot be found or is not a file")
                 continue
 
             info = Collect.get_file_info(file_path)
