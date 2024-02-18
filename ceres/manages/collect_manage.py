@@ -141,13 +141,9 @@ class Collect:
         Returns:
             str
         """
-        _, stdout, _ = execute_shell_command(["dmidecode -t bios"])
+        _, stdout, _ = execute_shell_command(["dmidecode -s bios-version"])
 
-        res = re.search('(?=Version:).+', stdout)
-        if res:
-            return res.group()[8:].strip()
-        LOGGER.warning('Failed to get bios version, please check dmidecode and try it again')
-        return ''
+        return stdout
 
     @staticmethod
     def get_current_kernel_version() -> str:
