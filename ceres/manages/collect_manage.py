@@ -376,9 +376,9 @@ class Collect:
         Returns:
             uuid(str)
         """
-        code, stdout, _ = execute_shell_command(["dmidecode", "grep UUID"])
+        code, stdout, _ = execute_shell_command(["dmidecode", "-s", "system-uuid"])
         if code == CommandExitCode.SUCCEED:
-            return stdout.replace("-", "").split(':')[1].strip()
+            return stdout.replace("-", "").strip()
         return ""
 
     @staticmethod
