@@ -90,6 +90,7 @@ class VulnerabilityCommand(BaseCommand):
         result, data = validate_data(arguments, CVE_SCAN_SCHEMA)
         if not result:
             sys.exit(1)
+        kernel = data.get("kernel", True)
         _, cve_scan_info = VulnerabilityManage().cve_scan(data)
         kernel_check, _ = PreCheck.kernel_consistency_check()
         print(
@@ -99,7 +100,7 @@ class VulnerabilityCommand(BaseCommand):
                     "unfixed_cves": cve_scan_info.get("unfixed_cves", []),
                     "fixed_cves": cve_scan_info.get("fixed_cves", []),
                     "os_version": Collect.get_os_version(),
-                    "installed_packages": Collect.get_installed_packages(),
+                    "installed_packages": Collect.get_installed_packages(kernel),
                     "reboot": not kernel_check,
                 }
             )
