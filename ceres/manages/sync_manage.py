@@ -39,11 +39,9 @@ class SyncManage:
         file_path = config.get('file_path')
 
         contents = config.get('content')
-        lines = contents.split('\n')
         try:
             with open(file_path, "w", encoding="utf-8") as file:
-                for line in lines:
-                    file.write(line + "\n")
+                file.write(contents)
         except Exception as e:
             LOGGER.error("write sync content to conf failed, with msg{}".format(e))
             return UNKNOWN_ERROR
