@@ -114,9 +114,9 @@ class Plugin:
         Returns:
             The str type of main process id
         """
-        code, main_pid_info, _ = execute_shell_command([f"systemctl status {rpm_name}", "grep Main"])
+        code, main_pid, _ = execute_shell_command([f"systemctl show --property MainPID --value {rpm_name}"])
         if code == CommandExitCode.SUCCEED:
-            return re.search("[0-9]+[0-9]", main_pid_info).group()
+            return main_pid
         LOGGER.error(f"Failed to get {rpm_name} pid")
         return ""
 
