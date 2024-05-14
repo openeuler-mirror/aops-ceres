@@ -100,9 +100,9 @@ class Plugin:
             str: dead or running
 
         """
-        code, stdout, _ = execute_shell_command([f"systemctl status {self.rpm_name}", "grep Active"])
+        code, stdout, _ = execute_shell_command([f"systemctl show --property ActiveState --property SubState --value {self.rpm_name}"])
         if code == CommandExitCode.SUCCEED:
-            return re.search(r':.+\(', stdout).group()[1:-1].strip()
+            return stdout
         LOGGER.error(f'Failed to get service {self.rpm_name} status!')
         return ""
 
