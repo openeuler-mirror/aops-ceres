@@ -32,11 +32,17 @@ class Resource:
         Returns:
             str:The memory value which has used
         """
-        code, stdout, _ = execute_shell_command([f"cat /proc/{pid}/status", "grep VmRSS"])
-        if code == CommandExitCode.SUCCEED:
-            return stdout.split(":")[1].strip()
-        LOGGER.error(f'Failed to get memory info of process {pid}!')
-        return ""
+        try:
+            with open(f"/proc/{pid}/status", 'r') as status_file:
+                for line in status_file:
+                    if line.startswith("VmRSS:"):
+                        vmrss = line.split(":")[1].strip()
+                        return vmrss
+            return ""
+        except Exception as e:
+            LOGGER.error(f'Failed to get memory info of process {pid}!')
+            LOGGER.error(f"An error occurred: {e}")
+            return ""
 
     @classmethod
     def get_memory_limit(cls, rpm_name: str) -> str:
