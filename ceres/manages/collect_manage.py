@@ -175,7 +175,7 @@ class Collect:
         """
         _, stdout, _ = execute_shell_command(["lscpu"], **{"env": {"LANG": "en_US.utf-8"}})
 
-        info_list = re.findall('.+:.+', stdout)
+        info_list = [line for line in stdout.strip().split('\n') if ":" in line]
 
         if not info_list:
             LOGGER.warning('Failed to read cpu info by lscpu, please check it and try again.')
