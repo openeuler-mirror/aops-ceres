@@ -63,5 +63,5 @@ class BaseCommand:
         if not vars(args):
             print("No command provided. Please enter a valid command.\n", file=sys.stderr)
             cls.parser.print_help(file=sys.stderr)
-            sys.sys.exit(1)
+            sys.exit(1)
         args.func(args)
