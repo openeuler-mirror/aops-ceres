@@ -84,7 +84,7 @@ class RegisterCommand(BaseCommand):
         self._register(get_dict_from_file(arguments))
 
     def _register(self, register_info):
-        if register_info and self._register_hadnle(register_info) == SUCCESS:
+        if register_info and self._register_handle(register_info) == SUCCESS:
             print('Register Success')
         else:
             print('Register Fail')
@@ -109,7 +109,7 @@ class RegisterCommand(BaseCommand):
         return res
 
     @staticmethod
-    def _register_hadnle(register_info: dict) -> int:
+    def _register_handle(register_info: dict) -> int:
         """
         register on manager
         Args:

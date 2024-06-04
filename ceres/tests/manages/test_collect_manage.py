@@ -12,6 +12,7 @@
 # ******************************************************************************/
 import grp
 import os
+import platform
 import pwd
 import unittest
 import warnings
@@ -227,62 +228,28 @@ class TestCollectManage(unittest.TestCase):
             res,
         )
 
-    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
-    def test_get_kernel_version_should_return_cpu_info_when_execute_command_successfully(
-        self, mock_execute_shell_command
-    ):
-        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, '5.10.0-5.10.0.24.oe1.x86_64', ""
-        expect_res = '5.10.0-5.10.0.24'
-        res = Collect._Collect__get_kernel_version()
-        self.assertEqual(expect_res, res)
+    @mock.patch.object(platform, "uname")
+    def test_get_kernel_version_should_return_cpu_info_when_execute_command_successfully(self, mock_uname_info):
+        mock_uname_info.return_value = platform.uname_result(
+            "Linux", "localhost", "5.10.0-5.10.0.24.oe1.x86_64", "openeuler", "x86_64"
+        )
+        res = Collect.get_current_kernel_version()
+        self.assertEqual('5.10.0-5.10.0.24.oe1.x86_64', res)
 
-    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
-    def test_get_kernel_version_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
-        self, mock_execute_shell_command
-    ):
-        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, 'test_info', ""
-        res = Collect._Collect__get_kernel_version()
-        self.assertEqual('', res)
-
-    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
-    def test_get_kernel_version_should_return_cpu_info_when_host_has_no_command_uname(self, mock_execute_shell_command):
-        mock_execute_shell_command.return_value = CommandExitCode.FAIL, "", ""
-        res = Collect._Collect__get_kernel_version()
+    @mock.patch.object(platform, "uname")
+    def test_get_kernel_version_should_return_empty_string_when_get_kernel_version_failed(self, mock_uname_info):
+        mock_uname_info.return_value = platform.uname_result("Linux", "localhost", "", "openeuler", "x86_64")
+        res = Collect.get_current_kernel_version()
         self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.execute_shell_command')
     def test_get_bios_version_should_return_cpu_info_when_execute_command_successfully(
         self, mock_execute_shell_command
     ):
-        mock_shell_stdout = """
-                BIOS Information
-                Vendor: innotek GmbH
-                Version: VirtualBox
-                Release Date: 12/01/2006
-                Address: 0xE0000
-                Runtime Size: 128 kB
-                ROM Size: 128 kB
-                Characteristics:
-                        ISA is supported
-                        PCI is supported
-                        Boot from CD is supported
-                        Selectable boot is supported
-                        8042 keyboard services are supported (int 9h)
-                        CGA/mono video services are supported (int 10h)
-                        ACPI is supported
-        """
-        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, mock_shell_stdout, ""
+        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, "VirtualBox", ""
         expect_res = 'VirtualBox'
         res = Collect._Collect__get_bios_version()
         self.assertEqual(expect_res, res)
-
-    @mock.patch('ceres.manages.collect_manage.execute_shell_command')
-    def test_get_bios_version_should_return_empty_string_when_execute_command_successfully_but_not_get_expected_information(
-        self, mock_execute_shell_command
-    ):
-        mock_execute_shell_command.return_value = CommandExitCode.SUCCEED, 'test_info', ""
-        res = Collect._Collect__get_bios_version()
-        self.assertEqual('', res)
 
     @mock.patch('ceres.manages.collect_manage.execute_shell_command')
     def test_get_bios_version_should_return_cpu_info_when_host_has_no_command_dmidecode(
@@ -420,7 +387,7 @@ class TestCollectManage(unittest.TestCase):
         mock_execute_shell_command.return_value = CommandExitCode.FAIL, "", ""
         self.assertEqual([], Collect.get_installed_packages())
 
-    @mock.patch.object(Collect, "_Collect__get_kernel_version")
+    @mock.patch.object(Collect, "get_current_kernel_version")
     @mock.patch.object(Collect, "_Collect__get_bios_version")
     @mock.patch.object(Collect, "get_os_version")
     def test_get_os_info_should_return_os_info_when_execute_command_failed(
@@ -428,11 +395,11 @@ class TestCollectManage(unittest.TestCase):
     ):
         mock_system_info.return_value = "mock_os_version"
         mock_bios_version.return_value = "mock_bios_version"
-        mock_kernel_version.return_value = "mock_kernel_version"
+        mock_kernel_version.return_value = "5.10.0-5.10.0.24.oe1.x86_64"
         expected_result = {
             "os_version": "mock_os_version",
             "bios_version": "mock_bios_version",
-            "kernel": "mock_kernel_version",
+            "kernel": "5.10.0-5.10.0.24",
         }
         self.assertEqual(expected_result, Collect()._get_os_info())
 
