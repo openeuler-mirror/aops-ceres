@@ -15,7 +15,7 @@ import json
 import os
 import shlex
 import subprocess
-from typing import Union, Tuple, NoReturn, Sequence
+from typing import Union, Tuple, NoReturn, Sequence, Any
 
 from libconf import load, ConfigParseError, AttrDict
 from jsonschema import validate, ValidationError
@@ -43,7 +43,7 @@ def load_conf(file_path: str) -> configparser.RawConfigParser:
     return cf
 
 
-def validate_data(data: Union[str, dict], schema: dict) -> bool:
+def validate_data(data: Union[str, dict], schema: dict) -> Tuple[bool, Union[dict, Any]]:
     """
     Validate data against JSON schema
 

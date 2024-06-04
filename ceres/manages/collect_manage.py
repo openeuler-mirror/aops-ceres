@@ -400,9 +400,12 @@ class Collect:
         return host_ip
 
     @staticmethod
-    def get_installed_packages():
+    def get_installed_packages(kernel=True):
         """
         query installed packages
+
+        Args:
+            kernel(bool): only for kernel package filtering
 
         Returns:
             list: list of dict, each dict is package_name and package_version. e.g
@@ -411,8 +414,11 @@ class Collect:
                     "version": "4.19.90-2022.1.1"
                 }]
         """
-
-        code, source_name_info, _ = execute_shell_command(["rpm -qi kernel", "grep .src.rpm"])
+        if kernel:
+            command = ["rpm -qi kernel", "grep .src.rpm"]
+        else:
+            command = ["rpm -qai", "grep .src.rpm"]
+        code, source_name_info, _ = execute_shell_command(command)
         if code != CommandExitCode.SUCCEED:
             LOGGER.error("Failed to query installed packages.")
             return []
