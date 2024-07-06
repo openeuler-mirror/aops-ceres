@@ -25,8 +25,11 @@ from ceres.function.schema import (
 from ceres.function.status import StatusCode
 from ceres.function.util import validate_data
 from ceres.manages.collect_manage import Collect
-from ceres.manages.rollback_manage import RollbackManage
-from ceres.manages.vulnerability_manage import VulnerabilityManage
+from ceres.manages.vulnerability_manage.rollback_manage import RollbackManage
+from ceres.manages.vulnerability_manage.set_repo_manage import SetRepoManage
+from ceres.manages.vulnerability_manage.fix_cve_manage import CveFixManage
+from ceres.manages.vulnerability_manage.scan_cve_vulnerability import CveScanManage
+from ceres.manages.vulnerability_manage.remove_hotpatch_manage import HotpatchRemoveManage
 
 
 class VulnerabilityCommand(BaseCommand):
@@ -79,7 +82,7 @@ class VulnerabilityCommand(BaseCommand):
         if not result:
             sys.exit(1)
 
-        res = StatusCode.make_response_body(VulnerabilityManage().repo_set(data))
+        res = StatusCode.make_response_body(SetRepoManage.set_repo(data))
         print(json.dumps(res))
 
     @staticmethod
@@ -91,7 +94,7 @@ class VulnerabilityCommand(BaseCommand):
         if not result:
             sys.exit(1)
         kernel = data.get("kernel", True)
-        _, cve_scan_info = VulnerabilityManage().cve_scan(data)
+        _, cve_scan_info = CveScanManage().cve_scan(data)
         kernel_check, _ = PreCheck.kernel_consistency_check()
         print(
             json.dumps(
@@ -114,7 +117,7 @@ class VulnerabilityCommand(BaseCommand):
         result, data = validate_data(arguments, CVE_FIX_SCHEMA)
         if not result:
             sys.exit(1)
-        cve_fix_result = VulnerabilityManage().cve_fix(data)
+        cve_fix_result = CveFixManage.cve_fix(data)
         print(json.dumps(cve_fix_result))
 
     @staticmethod
@@ -125,7 +128,7 @@ class VulnerabilityCommand(BaseCommand):
         result, data = validate_data(arguments, REMOVE_HOTPATCH_SCHEMA)
         if not result:
             sys.exit(1)
-        print(json.dumps(VulnerabilityManage().remove_hotpatch(data.get("cves"))))
+        print(json.dumps(HotpatchRemoveManage.remove_hotpatch(data.get("cves"))))
 
     @staticmethod
     def rollback_handle(arguments):
