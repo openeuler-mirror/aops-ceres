@@ -55,6 +55,8 @@ class Collect:
                                 'os_version': os_version,
                                 'bios_version': bios_version,
                                 'kernel': kernel_version
+                                'os_name': os_name,
+                                "os_arch": arch info
                                 },
                             "cpu": {
                                 "architecture": string,
@@ -127,11 +129,35 @@ class Collect:
         kernel_info = re.search(r'[\d\.]+-[\d\.]+[\d]', self.get_current_kernel_version())
 
         res = {
+            'os_arch': platform.machine(),
+            'os_name': self.get_os_name(),
             'os_version': self.get_os_version(),
             'bios_version': self.__get_bios_version(),
             'kernel': kernel_info.group() if kernel_info else "",
         }
         return res
+
+    @staticmethod
+    def get_os_name() -> str:
+        """
+        get os name
+
+        Returns:
+            str
+        """
+        os_release_path = "/etc/os-release"
+        name_value = None
+
+        try:
+            with open(os_release_path, "r") as file:
+                for line in file:
+                    if line.startswith("NAME="):
+                        name_value = line.strip().split("=")[1].strip('"')
+                        break
+        except OSError:
+            LOGGER.error(f"Error reading {os_release_path}: {e}")
+
+        return name_value
 
     @staticmethod
     def __get_bios_version() -> str:
