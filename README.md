@@ -1,4 +1,5 @@
 # aops-ceres
+[English](./README_EN.md) | 简体中文
 
 #### 介绍
 An agent which needs to be adopted in client, it managers some plugins, such as gala-gopher(kpi collection), fluentd(log collection) and so on.
