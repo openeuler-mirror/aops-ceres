@@ -12,7 +12,7 @@
 
 # 2、dnf热补丁插件设计
 ## 2.1、热补丁工具
-基于syscare运行热补丁。syscare项目地址：<https://gitee.com/openeuler/syscare>
+基于syscare运行热补丁。syscare项目地址：<https://atomgit.com/openeuler/syscare>
 
 ## 2.2、热补丁状态图
 

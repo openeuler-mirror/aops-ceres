@@ -3,7 +3,7 @@ Version:	v1.3.3
 Release:	1
 Summary:	An agent which needs to be adopted in client, it managers some plugins, such as gala-gopher(kpi collection), fluentd(log collection) and so on.
 License:	MulanPSL2
-URL:		https://gitee.com/openeuler/%{name}
+URL:		https://atomgit.com/openeuler/%{name}
 Source0:	%{name}-%{version}.tar.gz
 
 
