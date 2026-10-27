@@ -12,7 +12,7 @@
 # ******************************************************************************/
 import unittest
 
-from cli.register import RegisterCommand
+from ceres.cli.register import RegisterCommand
 from ceres.function.status import PARAM_ERROR
 
 
