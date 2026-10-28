@@ -29,10 +29,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
 
     @patch(MOCK_VALIDATE_PATH, return_value=(False, None))
     def test_set_repo_handle_should_exit_when_data_invalid(self, _):
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 VulnerabilityCommand.set_repo_handle("{}")
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
     @patch("builtins.print")
     @patch(
@@ -51,10 +52,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
 
     @patch(MOCK_VALIDATE_PATH, return_value=(False, None))
     def test_scan_handle_should_exit_when_data_invalid(self, _):
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 VulnerabilityCommand.scan_handle("{}")
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
     @patch("ceres.cli.apollo.PreCheck.kernel_consistency_check", return_value=(True, ""))
     @patch("ceres.cli.apollo.Collect.get_installed_packages", return_value=["unzip"])
@@ -93,10 +95,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
 
     @patch(MOCK_VALIDATE_PATH, return_value=(False, None))
     def test_fix_handle_should_exit_when_data_invalid(self, _):
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 VulnerabilityCommand.fix_handle("{}")
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
     @patch("builtins.print")
     @patch(
@@ -112,10 +115,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
 
     @patch(MOCK_VALIDATE_PATH, return_value=(False, None))
     def test_remove_hotpatch_handle_should_exit_when_data_invalid(self, _):
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 VulnerabilityCommand.remove_hotpatch_handle("{}")
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
     @patch("builtins.print")
     @patch(
@@ -133,10 +137,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
 
     @patch(MOCK_VALIDATE_PATH, return_value=(False, None))
     def test_rollback_handle_should_exit_when_data_invalid(self, _):
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 VulnerabilityCommand.rollback_handle("{}")
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
     @patch("builtins.print")
     @patch(
@@ -170,10 +175,11 @@ class TestVulnerabilityCommand(unittest.TestCase):
     def test_execute_should_exit_when_no_option_matched(self, mock_print):
         command = VulnerabilityCommand.__new__(VulnerabilityCommand)
         command.command_handlers = {"scan_handle": VulnerabilityCommand.scan_handle}
-        with patch("sys.exit", side_effect=RuntimeError("exit")) as mock_exit:
+        with patch("ceres.cli.apollo.sys") as mock_sys:
+            mock_sys.exit.side_effect = RuntimeError("exit")
             with self.assertRaises(RuntimeError):
                 command.execute(make_namespace(scan=None))
-        mock_exit.assert_called_once_with(1)
+        mock_sys.exit.assert_called_once_with(1)
 
 
 if __name__ == "__main__":
