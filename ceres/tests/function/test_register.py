@@ -207,15 +207,15 @@ class TestRegister(unittest.TestCase):
 
     def test_register_info_to_dict_should_return_dict_info_when_input_is_correct(self):
         mock_string = '{"mock": "mock"}'
-        res = RegisterCommand._register_info_to_dict(mock_string)
+        res = getattr(RegisterCommand, "_register_info_to_dict")(mock_string)
         self.assertEqual({'mock': 'mock'}, res)
 
     def test_register_info_to_dict_should_return_empty_dict_when_input_is_incorrect(self):
         mock_string = '["mock"]'
-        res = RegisterCommand._register_info_to_dict(mock_string)
+        res = getattr(RegisterCommand, "_register_info_to_dict")(mock_string)
         self.assertEqual({}, res)
 
     def test_register_info_to_dict_should_return_empty_dict_when_input_is_not_json_string(self):
         mock_string = '{mock'
-        res = RegisterCommand._register_info_to_dict(mock_string)
+        res = getattr(RegisterCommand, "_register_info_to_dict")(mock_string)
         self.assertEqual({}, res)
