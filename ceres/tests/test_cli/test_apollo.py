@@ -61,7 +61,10 @@ class TestVulnerabilityCommand(unittest.TestCase):
     @patch("ceres.cli.apollo.Collect.get_os_version", return_value="openEuler 22.03")
     @patch(
         "ceres.cli.apollo.CveScanManage.cve_scan",
-        return_value=(0, {"check_items": [], "unfixed_cves": [{"cve_id": "CVE-1"}], "fixed_cves": []}),
+        return_value=(
+            0,
+            {"check_items": [], "unfixed_cves": [{"cve_id": "CVE-1"}], "fixed_cves": []},
+        ),
     )
     @patch("builtins.print")
     @patch(MOCK_VALIDATE_PATH, return_value=(True, {"check_items": []}))
@@ -120,7 +123,9 @@ class TestVulnerabilityCommand(unittest.TestCase):
         return_value={"status": "succeed", "cves": []},
     )
     @patch(MOCK_VALIDATE_PATH, return_value=(True, {"cves": ["CVE-2023-1111"]}))
-    def test_remove_hotpatch_handle_should_print_result_when_succeed(self, _, mock_remove, mock_print):
+    def test_remove_hotpatch_handle_should_print_result_when_succeed(
+        self, _, mock_remove, mock_print
+    ):
         VulnerabilityCommand.remove_hotpatch_handle("{}")
         mock_remove.assert_called_once_with(["CVE-2023-1111"])
         printed = json.loads(mock_print.call_args[0][0])
@@ -151,7 +156,9 @@ class TestVulnerabilityCommand(unittest.TestCase):
         command.command_handlers = {"scan": VulnerabilityCommand.scan_handle}
         with patch(MOCK_VALIDATE_PATH, return_value=(True, {})), patch(
             "ceres.cli.apollo.CveScanManage.cve_scan", return_value=(0, {})
-        ), patch("ceres.cli.apollo.PreCheck.kernel_consistency_check", return_value=(True, "")), patch(
+        ), patch(
+            "ceres.cli.apollo.PreCheck.kernel_consistency_check", return_value=(True, "")
+        ), patch(
             "ceres.cli.apollo.Collect.get_os_version", return_value=""
         ), patch(
             "ceres.cli.apollo.Collect.get_installed_packages", return_value=[]
