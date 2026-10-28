@@ -164,7 +164,12 @@ class TestCveRollbackSchema(unittest.TestCase):
         self.assertTrue(result)
 
     def test_cve_rollback_schema_should_reject_missing_target_rpm(self):
-        data = {"rollback_type": "hotpatch", "installed_rpm": "kernel-2", "dnf_event_start": 1, "dnf_event_end": 2}
+        data = {
+            "rollback_type": "hotpatch",
+            "installed_rpm": "kernel-2",
+            "dnf_event_start": 1,
+            "dnf_event_end": 2,
+        }
         result, _ = validate_data(data, CVE_ROLLBACK_SCHEMA)
         self.assertFalse(result)
 
@@ -201,7 +206,9 @@ class TestConfSyncSchema(unittest.TestCase):
     """Tests for CONF_SYNC_SCHEMA via validate_data."""
 
     def test_conf_sync_schema_should_accept_valid_data(self):
-        result, _ = validate_data({"file_path": "/etc/hostname", "content": "host"}, CONF_SYNC_SCHEMA)
+        result, _ = validate_data(
+            {"file_path": "/etc/hostname", "content": "host"}, CONF_SYNC_SCHEMA
+        )
         self.assertTrue(result)
 
     def test_conf_sync_schema_should_reject_missing_content(self):
