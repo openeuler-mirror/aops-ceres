@@ -117,7 +117,7 @@ class VulnerabilityCommand(BaseCommand):
         result, data = validate_data(arguments, CVE_FIX_SCHEMA)
         if not result:
             sys.exit(1)
-        cve_fix_result = CveFixManage.cve_fix(data)
+        cve_fix_result = CveFixManage().cve_fix(data)
         print(json.dumps(cve_fix_result))
 
     @staticmethod
@@ -128,7 +128,7 @@ class VulnerabilityCommand(BaseCommand):
         result, data = validate_data(arguments, REMOVE_HOTPATCH_SCHEMA)
         if not result:
             sys.exit(1)
-        print(json.dumps(HotpatchRemoveManage.remove_hotpatch(data.get("cves"))))
+        print(json.dumps(HotpatchRemoveManage().remove_hotpatch(data.get("cves"))))
 
     @staticmethod
     def rollback_handle(arguments):
