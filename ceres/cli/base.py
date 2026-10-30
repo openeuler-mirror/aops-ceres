@@ -20,7 +20,7 @@ class BaseCommand:
     """
 
     parser = argparse.ArgumentParser(description="ceres tools")
-    subparsers = parser.add_subparsers(description="sub-command ")
+    subparsers = parser.add_subparsers(description="sub-command")
 
     def __init__(self):
         self.parser = None
@@ -36,6 +36,12 @@ class BaseCommand:
         pass
 
     def _add_arguments(self):
+        """
+        Add arguments of each subcommand, it should be overridden by subclasses
+
+        Returns:
+            None
+        """
         pass
 
     @staticmethod
